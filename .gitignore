@@ -1,0 +1,23 @@
+# Node.js module folder
+# This is always ignored as dependencies are installed via package.json
+/node_modules
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# VS Code
+.vscode/
+
+# JetBrains/WebStorm IDEs
+.idea/
+
+# macOS Finder files
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

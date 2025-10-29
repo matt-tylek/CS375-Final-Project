@@ -1,0 +1,26 @@
+{
+  "name": "cs375-final-project",
+  "version": "1.0.0",
+  "description": "PetFinder",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matt-tylek/CS375-Final-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/matt-tylek/CS375-Final-Project/issues"
+  },
+  "homepage": "https://github.com/matt-tylek/CS375-Final-Project#readme",
+  "dependencies": {
+    "axios": "^1.13.1",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  }
+}
