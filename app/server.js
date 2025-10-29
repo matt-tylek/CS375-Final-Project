@@ -1,6 +1,7 @@
 const pg = require("pg");
 const express = require("express");
 let axios = require("axios");
+const path = require('path');
 const app = express();
 app.use(express.json());
 const port = 3000;
@@ -18,11 +19,7 @@ const pool = new Pool(env);
 pool.connect().then(function () {
   console.log(`Connected to database ${env.database}`);
 });
-
-app.use(express.static("public"));
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
-});
+app.use(express.static(path.join(__dirname, 'public')));
 app.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
 });
