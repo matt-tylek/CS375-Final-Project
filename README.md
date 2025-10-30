@@ -4,6 +4,8 @@
 
 A web application built using Node.js and Express to serve static HTML, with Axios handling client-side API requests and PostgreSQL managing pet data.
 
+API Doc: https://www.petfinder.com/developers/v2/docs/
+
 ## How to Run:
 
 1) Ensure Node.js (which includes npm) and a running PostgreSQL database instance is installed and accessible.
