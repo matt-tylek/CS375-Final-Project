@@ -5,13 +5,13 @@ const TOKEN_URL = 'https://api.petfinder.com/v2/oauth2/token';
 
 let tokenData = {
     accessToken: null,
-    expiresIn: 0, // Time (in seconds) until expiration
+    expiresIn: 0, // Time (in sec) until expiration
     expirationTime: 0 // Timestamp when the token expires
 };
 
 /**
  * Sends POST request to the Petfinder API to obtain a new access token
- * @param {Object} config - The configuration object loaded from env.json
+ * @param config - The configuration object loaded from env.json
  */
 async function generateNewToken(config) {
     const { api_key, api_secret } = config;
@@ -34,7 +34,7 @@ async function generateNewToken(config) {
         tokenData.accessToken = response.data.access_token;
         tokenData.expiresIn = response.data.expires_in;
 
-        // Set the new expiration time & set it to refresh early (at 90% time) 
+        // Set the new expiration time & set it to refresh early at 90% time
         tokenData.expirationTime = Date.now() + (response.data.expires_in * 1000 * 0.9);
 
         console.log('Petfinder token generated successfully.');
@@ -49,14 +49,14 @@ async function generateNewToken(config) {
         } else {
             console.error('Error:', error.message);
         }
-        // In a real app, you would stop the server or implement a retry mechanism here.
+       
         return null; 
     }
 }
 
 /**
  * Schedules the token refresh and provides the current token.
- * @param {Object} config - The configuration object loaded from env.json.
+ * @param config - The configuration object loaded from env.json.
  */
 function startTokenManager(config) {
     // Generate the token immediately on startup
