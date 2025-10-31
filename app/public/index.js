@@ -40,3 +40,44 @@ async function fetchPets(params) {
         return error.response ? error.response.data : error.message;
     }
 }
+
+
+searchbtn.addEventListener('click', async function () {
+  const pets = await fetchPets(params);
+  showPets(pets);
+});
+
+function showPets(pets) {
+  const grid = document.getElementById('pet-grid');
+  grid.innerHTML = '';
+
+  if (!Array.isArray(pets) || pets.length === 0) {
+    grid.innerHTML = '<p>No pets found.</p>';
+    return;
+  }
+
+  for (let i = 0; i < pets.length; i++) {
+    const pet = pets[i];
+
+    let img = 'https://via.placeholder.com/220x180?text=No+Image';
+    if (pet.photos && pet.photos.length > 0 && pet.photos[0].medium) {
+        img = pet.photos[0].medium;
+    }
+
+    const name = pet.name || 'Unnamed';
+
+    let breed = 'Unknown breed';
+    if (pet.breeds && pet.breeds.primary) {
+        breed = pet.breeds.primary;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+        '<img src="' + img + '" alt="' + name + '">' +
+        '<h3>' + name + '</h3>' +
+        '<p>' + breed + '</p>';
+
+    grid.appendChild(card);
+    }
+}
