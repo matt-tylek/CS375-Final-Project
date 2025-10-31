@@ -12,7 +12,23 @@ API Doc: https://www.petfinder.com/developers/v2/docs/
 
 2) Install all dependencies in package.json: `npm install`
 
-3) Ensure PostgresSQL and API configuration details are set in env.json
+3) Ensure PostgresSQL and API configuration details are set in env.json 
+
+For example: 
+
+```
+{
+  "user": "postgres",
+  "host": "localhost",
+  "database": "petfinder",
+  "password": "YOUR_DB_PASSWORD",
+  "port": 5432,
+
+  "api_key": "YOUR_PETFINDER_API_KEY",
+  "api_secret": "YOUR_PETFINDER_API_SECRET"
+}
+
+```
 
 4) Start server: `npm start`
 
