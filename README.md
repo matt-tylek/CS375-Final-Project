@@ -12,7 +12,7 @@ API Doc: https://www.petfinder.com/developers/v2/docs/
 
 2) Install all dependencies in package.json: `npm install`
 
-3) Ensure PostgresSQL and API configuration details are set in env.json 
+3) Ensure PostgresSQL and API configuration details are set in env.json in your root directory of project
 
 For example: 
 
