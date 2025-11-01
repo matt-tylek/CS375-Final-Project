@@ -5,8 +5,8 @@ let axios = require("axios");
 const path = require('path');
 const config = require("../env.json");
 
-const port = 3000;
-const hostname = "localhost";
+const port = process.env.PORT || 3000;
+const hostname = process.env.HOST || "localhost";
 
 const app = express();
 app.use(express.json());
@@ -14,13 +14,13 @@ app.use(express.json());
 //API Connection
 petAuth.startTokenManager(config);
 
-// //DB Connection
-// const env = require("../env.json");
-// const Pool = pg.Pool;
-// const pool = new Pool(env);
-// pool.connect().then(function () {
-//   console.log(`Connected to database ${env.database}`);
-// });
+//DB Connection
+//const env = require("../env.json");
+//const Pool = pg.Pool;
+//const pool = new Pool(env);
+//pool.connect().then(function () {
+//console.log(`Connected to database ${env.database}`);
+//});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
