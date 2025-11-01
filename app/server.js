@@ -73,20 +73,115 @@ app.get('/api/pets', async (req, res) => {
 });
 
 // GET Single Pet
-app.get('api/pets/:id', (req, res) => {
+app.get('api/pets/:id', async (req, res) => {
   // Returns detailed info for one specific pet
   // reads pet ID from request params
-});
+  const accessToken = petAuth.getAccessToken();
+  if (!accessToken) {
+    return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
+  }
+
+  const petId = req.params.id;
+  const externalApiUrl = `https://api.petfinder.com/v2/animals/${petId}`;
+  try{
+    const response = await axios.get(externalApiUrl,{headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }});
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching pet from Petfinder:', error.message);
+    if (error.response) {
+      console.error('Petfinder Status:', error.response.status);
+      console.error('Petfinder Data:', error.response.data);
+
+      if (error.response.status === 401) {
+        return res.status(503).json({ 
+          error: "External API token error. Retrying authentication.",
+          detail: error.response.data
+        });
+      }
+
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    // Handle network/connection errors
+    res.status(500).json({ error: "Internal Server Error during Petfinder request." });
+  }
+}
+);
 
 // Get Pet Types
-app.get('/api/types', (req, res) => {
+app.get('/api/types', async (req, res) => {
   // Returns list of supported animal types
-});
+  const accessToken = petAuth.getAccessToken();
+  if (!accessToken) {
+    return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
+  }
+
+  const externalApiUrl = 'https://api.petfinder.com/v2/types';
+  try {
+    const response = await axios.get(externalApiUrl, { headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }});
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching pet types from Petfinder:', error.message);
+    if (error.response) {
+      console.error('Petfinder Status:', error.response.status);
+      console.error('Petfinder Data:', error.response.data);
+
+      if (error.response.status === 401) {
+        return res.status(503).json({ 
+          error: "External API token error. Retrying authentication.",
+          detail: error.response.data
+        });
+      }
+
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    // Handle network/connection errors
+    res.status(500).json({ error: "Internal Server Error during Petfinder request." });
+  }
+}
+);
 
 // Get Pets by Single Pet Type
-app.get('/api/types', (req, res) => {
+app.get('/api/types', async (req, res) => {
   // Returns information on single animal type
-});
+  const accessToken = petAuth.getAccessToken();
+  if (!accessToken) {
+    return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
+  }
+
+  const type = req.params.type;
+  const externalApiUrl = `https://api.petfinder.com/v2/types/${type}`;
+  try {
+    const response = await axios.get(externalApiUrl, { headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }});
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching pet type from Petfinder:', error.message);
+    if (error.response) {
+      console.error('Petfinder Status:', error.response.status);
+      console.error('Petfinder Data:', error.response.data);
+
+      if (error.response.status === 401) {
+        return res.status(503).json({ 
+          error: "External API token error. Retrying authentication.",
+          detail: error.response.data
+        });
+      }
+
+      return res.status(error.response.status).json(error.response.data);
+    }
+
+    // Handle network/connection errors
+    res.status(500).json({ error: "Internal Server Error during Petfinder request." });
+  }
+}
+);
 
 // DB Management - GET, POST, DELETE
 
