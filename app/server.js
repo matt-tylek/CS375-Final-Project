@@ -73,7 +73,7 @@ app.get('/api/pets', async (req, res) => {
 });
 
 // GET Single Pet
-app.get('api/pets/:id', async (req, res) => {
+app.get('/api/pets/:id', async (req, res) => {
   // Returns detailed info for one specific pet
   // reads pet ID from request params
   const accessToken = petAuth.getAccessToken();
@@ -147,7 +147,7 @@ app.get('/api/types', async (req, res) => {
 );
 
 // Get Pets by Single Pet Type
-app.get('/api/types', async (req, res) => {
+app.get('/api/types/:type', async (req, res) => {
   // Returns information on single animal type
   const accessToken = petAuth.getAccessToken();
   if (!accessToken) {
