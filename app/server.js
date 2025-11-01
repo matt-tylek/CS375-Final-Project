@@ -15,12 +15,12 @@ app.use(express.json());
 petAuth.startTokenManager(config);
 
 // //DB Connection
-// const env = require("../env.json");
-// const Pool = pg.Pool;
-// const pool = new Pool(env);
-// pool.connect().then(function () {
-//   console.log(`Connected to database ${env.database}`);
-// });
+const env = require("../env.json");
+const Pool = pg.Pool;
+const pool = new Pool(env);
+pool.connect().then(function () {
+  console.log(`Connected to database ${env.database}`);
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
