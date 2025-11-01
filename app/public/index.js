@@ -6,7 +6,7 @@ const params = {
 };
 
 //Test fetchPets
-const searchbtn = document.getElementById('Wsearch');
+const searchbtn = document.getElementById('search');
 searchbtn.addEventListener('click', () => {
     fetchPets(params);
 });
