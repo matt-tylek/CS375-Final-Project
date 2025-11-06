@@ -5,12 +5,6 @@ const params = {
     distance: 50, 
 };
 
-//Test fetchPets
-const searchbtn = document.getElementById('search');
-searchbtn.addEventListener('click', () => {
-    fetchPets(params);
-});
-
 async function fetchPets(params) {
     // const type = document.getElementById('search-type').value;
     // const location = document.getElementById('search-location').value;
@@ -40,12 +34,6 @@ async function fetchPets(params) {
         return error.response ? error.response.data : error.message;
     }
 }
-
-
-searchbtn.addEventListener('click', async function () {
-  const pets = await fetchPets(params);
-  showPets(pets);
-});
 
 function showPets(pets) {
   const grid = document.getElementById('pet-grid');
@@ -81,3 +69,10 @@ function showPets(pets) {
     grid.appendChild(card);
     }
 }
+
+const searchBtn = document.getElementById('search');
+
+searchBtn.addEventListener('click', async function () {
+  const pets = await fetchPets(params);
+  showPets(pets);
+});

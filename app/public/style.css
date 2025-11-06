@@ -1,3 +1,5 @@
+/* Base Styles */
+
 body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -8,7 +10,10 @@ body {
 nav {
   background-color: #333;
   color: white;
-  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
 }
 
 h1 {
@@ -33,6 +38,8 @@ button {
   cursor: pointer;
 }
 
+/* Pet grid (for index.html) */
+
 #pet-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -53,3 +60,65 @@ button {
 }
 .card h3 { margin: 8px 0 4px; font-size: 16px; }
 .card p  { margin: 0 0 8px; color: #555; font-size: 14px; }
+
+/* Auth Buttons */
+
+.auth-buttons {
+  display: flex;
+  gap: 10px; 
+}
+
+.auth-buttons button {
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Auth form container */
+.auth-container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.auth-container h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.auth-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-container label {
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.auth-container input {
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.auth-container button {
+  margin-top: 20px;
+}
+
+.error {
+  color: rgb(242, 59, 59);
+  margin-top: 10px;
+  font-weight: bold;
+  margin: 40px auto;
+  text-align: center;
+}
+
+
+
+
