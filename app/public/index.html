@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PetFinder</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,6 +22,30 @@
   <button id="search">Get Pets!</button>
 
   <div id="pet-grid"></div>
+
+
+  <section id="chat-section">
+  <h2>Chat / DM</h2>
+
+  <div class="chat-row">
+    <label>Your name:</label>
+    <input type="text" id="chat-username" placeholder="e.g. matt@example.com" />
+    <button id="chat-connect">Connect</button>
+  </div>
+
+  <div class="chat-row">
+    <label>Send to (username):</label>
+    <input type="text" id="chat-recipient" placeholder="Recipient username" />
+  </div>
+
+  <div class="chat-row">
+    <label>Message:</label>
+    <input type="text" id="chat-message" placeholder="Type a message..." />
+    <button id="chat-send">Send</button>
+  </div>
+
+  <div id="chat-log"></div>
+</section>
 
   <script src="index.js"></script>
 </body>

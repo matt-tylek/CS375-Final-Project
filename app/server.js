@@ -185,6 +185,55 @@ app.get('/api/types/:type', async (req, res) => {
 
 // DB Management - GET, POST, DELETE
 
-app.listen(port, hostname, () => {
+// --- Socket.IO setup ---
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Map username -> socket.id
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+  console.log('New websocket connection:', socket.id);
+
+  // Client tells us who
+  socket.on('register', (username) => {
+    if (!username) return;
+    socket.username = username;
+    onlineUsers.set(username, socket.id);
+    console.log(`Registered user "${username}" with socket ${socket.id}`);
+  });
+
+  // Client sends a message
+  socket.on('private_message', ({ to, message }) => {
+    const from = socket.username;
+    const targetSocketId = onlineUsers.get(to);
+
+    if (!from) {
+      socket.emit('chat_error', 'You must register a username first.');
+      return;
+    }
+
+    if (!targetSocketId) {
+      socket.emit('chat_error', `User "${to}" is not online.`);
+      return;
+    }
+
+    io.to(targetSocketId).emit('private_message', { from, message });
+  });
+
+  // Cleanup
+  socket.on('disconnect', () => {
+    if (socket.username) {
+      onlineUsers.delete(socket.username);
+      console.log(`User "${socket.username}" disconnected.`);
+    }
+  });
+});
+
+
+server.listen(port, hostname, () => {
   console.log(`Listening at: http://${hostname}:${port}`);
 });
