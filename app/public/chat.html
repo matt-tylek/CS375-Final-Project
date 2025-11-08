@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PetFinder Chat</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      background: #f6f8fa;
+      font-family: "Inter", sans-serif;
+    }
+    .chat-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+    #chat-log {
+      height: 350px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fafafa;
+      margin-bottom: 15px;
+    }
+    .chat-line {
+      margin: 6px 0;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #e7f0ff;
+    }
+    .chat-line.me {
+      background: #dfffe0;
+      text-align: right;
+    }
+    .chat-controls input {
+      width: calc(100% - 120px);
+      padding: 8px;
+      margin-right: 8px;
+    }
+    .chat-controls button {
+      padding: 8px 14px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .chat-controls button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <h2>PetFinder Chat</h2>
+    <div class="auth-buttons">
+      <a href="index.html"><button>Home</button></a>
+      <a href="login.html"><button>Login</button></a>
+      <a href="signup.html"><button>Sign Up</button></a>
+    </div>
+  </nav>
+
+  <div class="chat-container">
+    <h2>Direct Messages</h2>
+    <div id="chat-log"></div>
+
+    <div class="chat-controls">
+      <input type="text" id="recipient" placeholder="Send to (username)" />
+      <input type="text" id="message" placeholder="Type your message..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script src="chat.js"></script>
+</body>
+</html>

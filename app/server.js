@@ -10,6 +10,8 @@ const hostname = process.env.HOST || "localhost";
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 //API Connection
 petAuth.startTokenManager(config);
