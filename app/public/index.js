@@ -1,8 +1,8 @@
 //Mock search params 
 const params = {
-    type: 'dog', 
+    type: 'cat', 
     location: '19104', 
-    distance: 50, 
+    distance: 15, 
 };
 
 async function fetchPets(params) {
@@ -65,6 +65,11 @@ function showPets(pets) {
         '<img src="' + img + '" alt="' + name + '">' +
         '<h3>' + name + '</h3>' +
         '<p>' + breed + '</p>';
+    
+    card.addEventListener('click', () => {
+        localStorage.setItem('selectedPet', JSON.stringify(pet));
+        window.location.href = 'pet.html';
+    });
 
     grid.appendChild(card);
     }
