@@ -1,0 +1,58 @@
+==============================
+Architecture Overview: Pet Finder Chat
+==============================
+
+Components:
+
+1. Client (Web/Mobile App)
+   - Displays chat UI with user list
+   - Shows chat history
+   - Sends and receives messages
+   - Small indicator in front of username (not online/offline, just clickable to open chat)
+
+2. Server (Node.js + WebSocket + REST API)
+   - Handles WebSocket connections for real-time messaging
+   - Handles REST API requests to fetch chat history
+   - Stores messages in the database
+   - Ensures message delivery if recipient is online
+
+3. Database (SQL or NoSQL)
+   - Stores users, messages, chat metadata
+   - Every message is persisted regardless of recipient online status
+
+==============================
+Message Flow
+==============================
+
+1. User opens chat with another user
+   - Client sends REST API request → Server fetches chat history from DB → displays in UI
+   - Client also subscribes to WebSocket messages for this chat
+
+2. Sending a message
+   - Recipient online:
+     - Client sends message via WebSocket → Server receives → broadcasts to recipient → saves in DB
+   - Recipient offline:
+     - No WebSocket connection exists → Server saves message in DB only
+     - When recipient next connects, client fetches missed messages from DB
+
+3. Fetching prior chats / new messages
+   - Client loads all chat history from DB on opening chat
+   - New messages appear in chat in real-time if online; otherwise, fetched when opening chat later
+
+4. Indicators
+   - Clickable indicator in front of usernames in chat list to open chat
+   - No online/offline status is displayed
+
+==============================
+Database Table Schema
+==============================
+
+CREATE TABLE Messages (
+    message_id SERIAL PRIMARY KEY,
+    sender_id INT NOT NULL,               -- ID of the sender
+    receiver_id INT NOT NULL,             -- ID of the recipient
+    message_text TEXT NOT NULL,           -- Message content
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Timestamp when sent
+    delivered BOOLEAN DEFAULT FALSE,      -- True if delivered via WebSocket
+    read BOOLEAN DEFAULT FALSE            -- True if recipient has read the message
+);
