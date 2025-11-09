@@ -17,12 +17,29 @@ app.use(express.static(path.join(__dirname, 'public')));
 petAuth.startTokenManager(config);
 
 //DB Connection
-//const env = require("../env.json");
-//const Pool = pg.Pool;
-//const pool = new Pool(env);
-//pool.connect().then(function () {
-//console.log(`Connected to database ${env.database}`);
-//});
+const Pool = pg.Pool;
+const pool = new Pool({
+  user: config.user,
+  host: config.host,
+  database: config.database,
+  password: config.password,
+  port: config.port,
+  ssl: config.ssl || false
+});
+
+// Test database connection
+pool.connect()
+  .then(function (client) {
+    console.log(`✅ Connected to database: ${config.database} at ${config.host}`);
+    client.release();
+  })
+  .catch(function (err) {
+    console.error('❌ Database connection error:', err.message);
+    console.error('Please check your env.json configuration and ensure your RDS instance is accessible.');
+  });
+
+// Make pool available for use in routes
+app.locals.pool = pool;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -186,6 +203,28 @@ app.get('/api/types/:type', async (req, res) => {
 );
 
 // DB Management - GET, POST, DELETE
+
+// Test database connection endpoint
+app.get('/api/db/test', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW() as current_time, version() as pg_version');
+    res.json({
+      status: 'success',
+      message: 'Database connection successful',
+      data: {
+        currentTime: result.rows[0].current_time,
+        postgresVersion: result.rows[0].pg_version.split(' ')[0] + ' ' + result.rows[0].pg_version.split(' ')[1]
+      }
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      error: error.message
+    });
+  }
+});
 
 // --- Socket.IO setup ---
 const http = require('http');
