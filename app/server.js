@@ -3,6 +3,8 @@ const express = require("express");
 const petAuth = require('./petAuth');
 let axios = require("axios");
 const path = require('path');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const config = require("../env.json");
 
 const port = process.env.PORT || 3000;
@@ -26,6 +28,27 @@ const pool = new Pool({
   port: config.port,
   ssl: config.ssl || false
 });
+
+const JWT_SECRET = process.env.JWT_SECRET || config.jwt_secret;
+const BCRYPT_ROUNDS = 12;
+
+function normalizeEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+function isValidEmail(email) {
+  return typeof email === 'string' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+}
+
+function isValidPassword(password) {
+  return typeof password === 'string' && password.length >= 8;
+}
+
+function ensureJwtSecret() {
+  if (!JWT_SECRET) {
+    throw new Error('JWT secret not configured');
+  }
+}
 
 // Test database connection
 pool.connect()
@@ -201,6 +224,82 @@ app.get('/api/types/:type', async (req, res) => {
   }
 }
 );
+
+// --- Auth routes ---
+app.post('/api/register', async (req, res) => {
+  const { email: rawEmail, password } = req.body || {};
+  const email = normalizeEmail(rawEmail);
+
+  if (!isValidEmail(email) || !isValidPassword(password)) {
+    return res.status(400).json({ error: 'Invalid email or password (min 8 chars).' });
+  }
+
+  try {
+    ensureJwtSecret();
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Email already registered.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const result = await pool.query(
+      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
+      [email, passwordHash]
+    );
+
+    const user = result.rows[0];
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+    res.status(201).json({ token, user });
+  } catch (err) {
+    console.error('Register error:', err.message);
+    if (err.code === '23514') {
+      return res.status(400).json({ error: 'Invalid email format.' });
+    }
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Email already registered.' });
+    }
+    if (err.message === 'JWT secret not configured') {
+      return res.status(500).json({ error: 'Server auth config missing.' });
+    }
+    res.status(500).json({ error: 'Unable to register user.' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { email: rawEmail, password } = req.body || {};
+  const email = normalizeEmail(rawEmail);
+
+  if (!isValidEmail(email) || !isValidPassword(password)) {
+    return res.status(400).json({ error: 'Invalid email or password.' });
+  }
+
+  try {
+    ensureJwtSecret();
+    const result = await pool.query(
+      'SELECT id, email, password_hash FROM users WHERE email = $1 LIMIT 1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials.' });
+    }
+
+    const user = result.rows[0];
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) {
+      return res.status(401).json({ error: 'Invalid credentials.' });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, user: { id: user.id, email: user.email } });
+  } catch (err) {
+    console.error('Login error:', err.message);
+    if (err.message === 'JWT secret not configured') {
+      return res.status(500).json({ error: 'Server auth config missing.' });
+    }
+    res.status(500).json({ error: 'Unable to login.' });
+  }
+});
 
 // DB Management - GET, POST, DELETE
 
