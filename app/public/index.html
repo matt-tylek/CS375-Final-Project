@@ -6,7 +6,66 @@
   <title>PetFinder</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhpmA9PjXuPXLrGzYtHVPSoEwleftNbsMvIY="
+     crossorigin=""/> -->
   <link rel="stylesheet" href="style.css">
+  <style>
+    .search-container {
+      background-color: #f4f4f4;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    #search-form {
+      display: inline-flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 15px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .form-group label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+    }
+
+    #search-form input,
+    #search-form select {
+      padding: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      height: 40px; 
+      box-sizing: border-box;
+    }
+
+    .search-btn {
+      padding: 10px 30px;
+      font-size: 1em;
+      background-color: #18b31f;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      height: 40px;
+      box-sizing: border-box;
+    }
+    #map {
+      height: 200px;
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
   <nav>
@@ -21,6 +80,7 @@
 
   <div class="search-container">
     <h1>Available Pets</h1>
+    <div id="map"></div>
     <form id="search-form">
       <div class="form-group">
         <label for="pet-type">Pet Type</label>
@@ -31,7 +91,7 @@
       
       <div class="form-group">
         <label for="location">Location</label>
-        <input type="text" id="location" placeholder="Enter Zip Code or City" />
+        <input type="text" id="location" placeholder="Enter Zip Code" />
       </div>
 
       <div class="form-group">
@@ -61,6 +121,9 @@
     </div>
   </section>
 
+  <!-- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZdA="
+     crossorigin=""></script> -->
   <script src="index.js"></script>
 </body>
 </html>

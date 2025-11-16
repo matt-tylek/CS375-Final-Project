@@ -47,6 +47,45 @@ function attachPetActions(pet) {
   }
 }
 
+function attachSocialShare(pet) {
+  const socialShareBtn = document.getElementById('socialShareBtn');
+  const fallbackDiv = document.getElementById('socialLinksFallback');
+  if (!socialShareBtn) return;
+
+  const shareUrl = window.location.href; 
+  const shareTitle = `Check out ${pet.name || 'this pet'}!`;
+  const shareText = `I found this adorable ${pet.type} named ${pet.name} up for adoption on PetFinder!`;
+
+  socialShareBtn.addEventListener('click', async () => {
+    // Try the MODERN Web Share API first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        console.log('Pet shared successfully!');
+      } catch (err) {
+        console.error('Share failed:', err.message);
+      }
+    } else {
+      // If it fails, show the FALLBACK links
+      console.log('Web Share API not supported. Showing fallback links.');
+      document.getElementById('shareTwitter').href = 
+        `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+        
+      document.getElementById('shareFacebook').href = 
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+        
+      document.getElementById('shareEmail').href = 
+        `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`;
+
+      fallbackDiv.style.display = 'block';
+    }
+  });
+}
+
 function renderPetDetailsFromStorage() {
   const detailContainer = document.getElementById('pet-details');
   const petJson = localStorage.getItem('selectedPet');
@@ -79,7 +118,7 @@ function renderPetDetailsFromStorage() {
             </div>
             
             <div class="info-panel">
-                <h2 class="section-header">Quick Facts</h2>
+                <h3 class="section-header">Quick Facts</h2>
                 <p><strong>Status:</strong> <span style="font-weight: bold; color: green;">${pet.status}</span></p>
                 <p><strong>ID:</strong> ${pet.id}</p>
                 <p><strong>Age:</strong> ${pet.age}</p>
@@ -88,7 +127,7 @@ function renderPetDetailsFromStorage() {
                 <p><strong>Coat:</strong> ${pet.coat || 'N/A'}</p>
                 <p><strong>Primary Breed:</strong> ${fullBreed}</p>
                 
-                <h2 class="section-header">Adoption Contact</h2>
+                <h3 class="section-header">Adoption Contact</h2>
                 <p><strong>Email:</strong> ${contact.email || 'N/A'}</p>
                 <p><strong>Phone:</strong> ${contact.phone || 'N/A'}</p>
                 <p><strong>Location:</strong> ${fullAddress.trim()}</p>
@@ -101,32 +140,42 @@ function renderPetDetailsFromStorage() {
                 <div class="pet-actions">
                     <button id="wishlistBtn">Add to Wishlist</button>
                     <button id="starBtn">Star Animal</button>
+                </div>
+                <div class="social-share">
+                    <h3 class="section-header">Share ${pet.name}</h3>
                     <button id="shareBtn">Share in Chat</button>
+                    <button id="socialShareBtn">Share to Social Media</button>
+                    <div id="socialLinksFallback" style="display: none; margin-top: 10px;">
+                        <a id="shareTwitter" href="#" target="_blank">Twitter</a>
+                        <a id="shareFacebook" href="#" target="_blank">Facebook</a>
+                        <a id="shareEmail" href="#">Email</a>
+                    </div>
                 </div>
 
             </div>
         </div>
 
-        <h2 class="section-header">About ${pet.name}</h2>
+        <h3 class="section-header">About ${pet.name}</h2>
         <p class="description">${pet.description || 'No detailed description provided.'}</p>
 
-        <h2 class="section-header">Health & Training</h2>
+        <h3 class="section-header">Health & Training</h2>
         ${renderAttribute('Spayed/Neutered', attributes.spayed_neutered)}
         ${renderAttribute('Shots Current', attributes.shots_current)}
         ${renderAttribute('House Trained', attributes.house_trained)}
         ${renderAttribute('Special Needs', attributes.special_needs)}
         
         ${pet.tags && pet.tags.length > 0 ? `
-            <h2 class="section-header">Personality Tags</h2>
+            <h3 class="section-header">Personality Tags</h2>
             <ul class="tag-list">${tagsHtml}</ul>
         ` : ''}
 
         ${videosHtml ? `
-            <h2 class="section-header">Videos</h2>
+            <h3 class="section-header">Videos</h2>
             <div class="video-container">${videosHtml}</div>
         ` : ''}
     `;
     attachPetActions(pet);
+    attachSocialShare(pet);
   } catch (error) {
     console.error('Failed to render pet data:', error);
     detailContainer.innerHTML = '<h1>Error loading pet details</h1>';
