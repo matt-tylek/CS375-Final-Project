@@ -194,6 +194,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const openModalBtn = document.getElementById('openPostModalBtn');
+    const closeModalBtn = document.getElementById('closePostModalBtn');
+    const modal = document.getElementById('postPetModal');
+    const postPetForm = document.getElementById('postPetForm');
+    const modalSuccessMessage = document.getElementById('modalSuccessMessage');
+    const modalFormContainer = document.getElementById('modalFormContainer');
+
+    if (openModalBtn) {
+        openModalBtn.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        });
+    }
+
+    function resetModal() {
+        modal.style.display = 'none';
+        modalSuccessMessage.style.display = 'none'; 
+        modalFormContainer.style.display = 'block';
+        postPetForm.reset(); 
+    }
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            resetModal();
+        });
+    }
+    
+    window.addEventListener('click', (e) => {
+        if (e.target == modal) {
+            resetModal();
+        }
+    });
+
+    if (postPetForm) {
+        postPetForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const petData = {
+                name: document.getElementById('postPetName').value,
+                type: document.getElementById('postPetType').value,
+                photo: document.getElementById('postPetPhoto').value,
+                description: document.getElementById('postPetDescription').value,
+                contact: document.getElementById('postContactEmail').value,
+            };
+            console.log('Pet to be posted:', petData);
+            modalFormContainer.style.display = 'none';
+            modalSuccessMessage.style.display = 'block';
+        });
+    }
+
     loadSavedLists();
     populatePetTypes();
 });
