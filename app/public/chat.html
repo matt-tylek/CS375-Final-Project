@@ -14,7 +14,6 @@
       margin: 0;
       font-family: "Inter", sans-serif;
     }
-    /* Full page layout */
     .main-layout {
       display: flex; 
       height: calc(100vh - 60px); 
@@ -30,26 +29,26 @@
       margin-top: 0;
       color: #333;
     }
-    .sidebar ul {
+    .thread-list {
       list-style: none;
       padding: 0;
     }
-    .sidebar li {
+    .thread-list li {
       padding: 10px;
       margin-bottom: 5px;
       border-radius: 8px;
       background: #e7f0ff;
       cursor: pointer;
     }
-    .sidebar li:hover {
+    .thread-list li:hover {
       background: #d4e0ff;
     }
-    .sidebar li.active {
+    .thread-list li.active {
       background: #007bff; 
       color: white; 
       font-weight: bold;
     }
-    .sidebar li.active:hover {
+    .thread-list li.active:hover {
       background: #0056b3; 
     }
     .main-chat-area {
@@ -125,7 +124,6 @@
       background: #0056b3;
       transform: translateY(-2px);
     }
-    /* Modal Content Box */
     .modal {
       display: none; 
       position: fixed; 
@@ -148,7 +146,6 @@
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
       position: relative;
     }
-    /* Close Button Style */
     .close-btn {
       color: #aaa;
       float: right;
@@ -161,6 +158,52 @@
       color: #000;
       text-decoration: none;
       cursor: pointer;
+    }
+    .share-preview {
+      border: 1px dashed #007bff;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      background: #f0f7ff;
+    }
+    .share-preview button {
+      background: #dc3545;
+      margin-top: 10px;
+    }
+    .shared-pet {
+      margin-top: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 8px;
+      background: #ffffff;
+    }
+    .shared-pet img {
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+    #contactResults {
+      list-style: none;
+      padding: 0;
+      margin-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #contactResults li {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    #contactResults li:hover {
+      background: #f2f2f2;
+    }
+    #contactSearch {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
   </style>
 </head>
@@ -177,16 +220,14 @@
   <div class="main-layout">
     <aside class="sidebar">
       <h3>Message History</h3>
-      <ul>
-        <li>abc124@gmail.com</li>
-        <li>petshelter@petshelter.com</li>
-      </ul>
+      <ul id="thread-list" class="thread-list"></ul>
     </aside>
 
     <div class="main-chat-area">
       <div class="chat-area-content">
         <h2>Direct Messages</h2>
         <div id="chat-log"></div>
+        <div id="share-preview" class="share-preview hidden"></div>
 
         <div class="chat-controls">
             <input type="text" id="recipient" placeholder="Send to (username)" />
@@ -207,12 +248,8 @@
   <div class="modal-content">
     <span class="close-btn" data-modal="contactListModal">&times;</span>
     <h3> Contact List</h3>
-    <p>A searchable list of available users will appear here.</p>
-    <input type="text" placeholder="Search contacts...">
-    <ul>
-      <li>abc124@gmail.com</li>
-      <li>petshelter@petshelter.com</li>
-    </ul>
+    <input type="text" id="contactSearch" placeholder="Search contacts...">
+    <ul id="contactResults"></ul>
   </div>
 </div>
 

@@ -1,135 +1,385 @@
 const socket = io();
 
-const chatLog = document.getElementById("chat-log");
-const messageInput = document.getElementById("message");
-const recipientInput = document.getElementById("recipient");
-const sendBtn = document.getElementById("sendBtn");
-const newChatsBtn = document.getElementById("newChatsBtn");
-const contactListBtn = document.getElementById("contactBtn");
-const contactListModal = document.getElementById("contactListModal");
-const closeButtons = document.querySelectorAll(".close-btn");
-const sidebar = document.querySelector(".sidebar");
+const chatLog = document.getElementById('chat-log');
+const messageInput = document.getElementById('message');
+const recipientInput = document.getElementById('recipient');
+const sendBtn = document.getElementById('sendBtn');
+const newChatsBtn = document.getElementById('newChatsBtn');
+const contactListBtn = document.getElementById('contactBtn');
+const contactListModal = document.getElementById('contactListModal');
+const closeButtons = document.querySelectorAll('.close-btn');
+const threadList = document.getElementById('thread-list');
+const contactSearchInput = document.getElementById('contactSearch');
+const contactResults = document.getElementById('contactResults');
+const sharePreview = document.getElementById('share-preview');
+
+const state = {
+  user: null,
+  threads: [],
+  contacts: [],
+  activeContact: null,
+  pendingShare: null
+};
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  return { Authorization: `Bearer ${token}` };
+}
+
+function requireLogin() {
+  window.location.href = 'login.html';
+}
 
 function openModal(modalElement) {
-    modalElement.style.display = "block";
+  modalElement.style.display = 'block';
 }
 
 function closeModal(modalElement) {
-    modalElement.style.display = "none";
+  modalElement.style.display = 'none';
 }
 
-let username = localStorage.getItem("username") || prompt("Enter your username:");
-if (username) {
-  socket.emit("register", username);
-  localStorage.setItem("username", username);
-  addChatLine(`You are chatting as "${username}"`);
-}
-
-function addChatLine(text, isMe = false) {
-  const div = document.createElement("div");
-  div.className = "chat-line" + (isMe ? " me" : "");
+function renderSystemLine(text) {
+  const div = document.createElement('div');
+  div.className = 'chat-line';
   div.textContent = text;
   chatLog.appendChild(div);
   chatLog.scrollTop = chatLog.scrollHeight;
 }
 
-sendBtn.addEventListener("click", () => {
-  const to = recipientInput.value.trim();
-  const message = messageInput.value.trim();
-  if (!to || !message) return;
+function renderSharedPet(pet) {
+  if (!pet) return null;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'shared-pet';
+  if (pet.photos && pet.photos.length > 0) {
+    const img = document.createElement('img');
+    img.src = pet.photos[0].medium || pet.photos[0].large || pet.photos[0].small;
+    img.alt = pet.name || 'Pet';
+    wrapper.appendChild(img);
+  }
+  const title = document.createElement('strong');
+  title.textContent = pet.name || 'Pet';
+  wrapper.appendChild(title);
+  const meta = document.createElement('div');
+  meta.textContent = [pet.type, pet.breeds && pet.breeds.primary].filter(Boolean).join(' · ');
+  wrapper.appendChild(meta);
+  const viewBtn = document.createElement('button');
+  viewBtn.textContent = 'View Details';
+  viewBtn.addEventListener('click', () => {
+    localStorage.setItem('selectedPet', JSON.stringify(pet));
+    window.location.href = 'pet.html';
+  });
+  wrapper.appendChild(viewBtn);
+  return wrapper;
+}
 
-  socket.emit("private_message", { to, message });
-  addChatLine(`To ${to}: ${message}`, true);
-  messageInput.value = "";
-});
+function renderMessageLine(message) {
+  if (!state.user) return;
+  const isMine = message.senderId === state.user.id;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'chat-line' + (isMine ? ' me' : '');
+  const meta = document.createElement('div');
+  const senderLabel = isMine ? 'You' : message.senderEmail;
+  const timestamp = new Date(message.createdAt).toLocaleString();
+  meta.textContent = `${senderLabel} • ${timestamp}`;
+  wrapper.appendChild(meta);
+  if (message.message) {
+    const body = document.createElement('div');
+    body.textContent = message.message;
+    wrapper.appendChild(body);
+  }
+  const sharedPet = renderSharedPet(message.sharedPet);
+  if (sharedPet) {
+    wrapper.appendChild(sharedPet);
+  }
+  chatLog.appendChild(wrapper);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
 
-socket.on("private_message", ({ from, message }) => {
-  addChatLine(`From ${from}: ${message}`);
-});
+function renderChatHistory(messages) {
+  chatLog.innerHTML = '';
+  if (!messages || messages.length === 0) {
+    renderSystemLine('No messages yet. Say hi!');
+    return;
+  }
+  messages.forEach(renderMessageLine);
+}
 
-socket.on("chat_error", (msg) => {
-  addChatLine(`${msg}`);
-});
+async function loadThreads() {
+  const headers = getAuthHeaders();
+  if (!headers) return;
+  try {
+    const response = await axios.get('/api/chat/threads', { headers });
+    state.threads = response.data.threads || [];
+    renderThreadList();
+  } catch (err) {
+    console.error('Unable to load threads:', err.message);
+  }
+}
+
+function renderThreadList() {
+  if (!threadList) return;
+  threadList.innerHTML = '';
+  if (!state.threads || state.threads.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = 'No conversations yet.';
+    threadList.appendChild(li);
+    return;
+  }
+  state.threads.forEach((thread) => {
+    const li = document.createElement('li');
+    li.textContent = thread.email;
+    li.dataset.id = thread.userId;
+    if (state.activeContact && state.activeContact.id === thread.userId) {
+      li.classList.add('active');
+    }
+    li.addEventListener('click', () => {
+      loadChatHistory(thread.userId, thread.email);
+    });
+    threadList.appendChild(li);
+  });
+}
+
+function upsertThread(userId, email) {
+  if (!userId) return;
+  const existing = state.threads.find((thread) => thread.userId === userId);
+  if (existing) {
+    existing.email = email;
+  } else {
+    state.threads.unshift({ userId, email, lastMessageAt: new Date().toISOString() });
+  }
+  renderThreadList();
+}
+
+async function loadContacts(query = '') {
+  const headers = getAuthHeaders();
+  if (!headers) return;
+  try {
+    const response = await axios.get('/api/users', { headers, params: query ? { search: query } : {} });
+    state.contacts = response.data.users || [];
+    renderContactResults();
+  } catch (err) {
+    console.error('Unable to load contacts:', err.message);
+  }
+}
+
+function renderContactResults() {
+  if (!contactResults) return;
+  contactResults.innerHTML = '';
+  if (!state.contacts || state.contacts.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = 'No users found.';
+    contactResults.appendChild(li);
+    return;
+  }
+  state.contacts.forEach((user) => {
+    const li = document.createElement('li');
+    li.textContent = user.email;
+    li.addEventListener('click', () => {
+      closeModal(contactListModal);
+      loadChatHistory(user.id, user.email);
+    });
+    contactResults.appendChild(li);
+  });
+}
+
+async function loadChatHistory(userId, email) {
+  const headers = getAuthHeaders();
+  if (!headers) return;
+  try {
+    const response = await axios.get(`/api/messages/${userId}`, { headers });
+    state.activeContact = { id: userId, email };
+    recipientInput.value = email;
+    const chatHeader = document.querySelector('.chat-area-content h2');
+    if (chatHeader) {
+      chatHeader.textContent = `Direct Messages with ${email}`;
+    }
+    renderChatHistory(response.data.messages);
+    upsertThread(userId, email);
+  } catch (err) {
+    renderSystemLine('Unable to load chat history.');
+  }
+}
 
 function startNewChat() {
-  recipientInput.value = ""; 
-  messageInput.value = "";
-  chatLog.innerHTML = ''; 
-  
+  state.activeContact = null;
+  recipientInput.value = '';
+  messageInput.value = '';
+  chatLog.innerHTML = '';
   const chatHeader = document.querySelector('.chat-area-content h2');
   if (chatHeader) {
-    chatHeader.textContent = "Direct Messages";
+    chatHeader.textContent = 'Direct Messages';
   }
-
-  document.querySelectorAll('.sidebar li').forEach(li => {
-    li.classList.remove('active');
-  });
-
-  addChatLine(`*Ready to start a new chat! Please enter a recipient username above.*`);
-  socket.emit("chat_unfocused"); 
+  renderSystemLine('Ready to start a new chat. Pick a contact or enter an email.');
 }
 
-newChatsBtn.addEventListener("click", () => {
-  startNewChat();
+function showSharePreview() {
+  if (!sharePreview) return;
+  if (!state.pendingShare) {
+    sharePreview.classList.add('hidden');
+    sharePreview.innerHTML = '';
+    return;
+  }
+  sharePreview.classList.remove('hidden');
+  const pet = state.pendingShare;
+  const name = pet.name || 'this pet';
+  sharePreview.innerHTML = `
+    <h4>Sharing ${name}</h4>
+    <p>${[pet.type, pet.breeds && pet.breeds.primary].filter(Boolean).join(' · ')}</p>
+    <button id="clearShareBtn">Remove</button>
+  `;
+  const clearBtn = document.getElementById('clearShareBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearSharePreview);
+  }
+}
+
+function clearSharePreview() {
+  state.pendingShare = null;
+  localStorage.removeItem('petToShare');
+  showSharePreview();
+}
+
+function loadPendingShare() {
+  const shareJson = localStorage.getItem('petToShare');
+  if (!shareJson) {
+    showSharePreview();
+    return;
+  }
+  try {
+    state.pendingShare = JSON.parse(shareJson);
+  } catch (err) {
+    state.pendingShare = null;
+  }
+  showSharePreview();
+}
+
+function buildMessagePayload() {
+  const message = messageInput.value.trim();
+  const recipientEmail = recipientInput.value.trim();
+  if (!state.activeContact && !recipientEmail) {
+    alert('Select a recipient or enter an email.');
+    return null;
+  }
+  if (!message && !state.pendingShare) {
+    alert('Enter a message or share a pet.');
+    return null;
+  }
+  const payload = { message };
+  if (state.activeContact) {
+    payload.recipientId = state.activeContact.id;
+  } else if (recipientEmail) {
+    payload.to = recipientEmail;
+  }
+  if (state.pendingShare) {
+    payload.sharedPet = state.pendingShare;
+  }
+  return payload;
+}
+
+function handleSendMessage() {
+  const payload = buildMessagePayload();
+  if (!payload) return;
+  socket.emit('private_message', payload);
+  messageInput.value = '';
+  if (state.pendingShare) {
+    clearSharePreview();
+  }
+  loadThreads();
+}
+
+socket.on('chat_error', (msg) => {
+  renderSystemLine(msg);
 });
 
-contactListBtn.addEventListener("click", () => {
-  openModal(contactListModal);
+socket.on('chat_history', ({ recipientId, messages }) => {
+  if (state.activeContact && state.activeContact.id === recipientId) {
+    renderChatHistory(messages);
+  }
 });
 
-closeButtons.forEach(btn => {
-    btn.addEventListener('click', (event) => {
-        // Get the ID of the modal to close from the data-modal attribute
-        const modalId = event.target.getAttribute('data-modal');
-        const modalToClose = document.getElementById(modalId);
-        closeModal(modalToClose);
-    });
+socket.on('private_message', (message) => {
+  if (!state.user) return;
+  const partnerId = message.senderId === state.user.id ? message.recipientId : message.senderId;
+  const partnerEmail = message.senderId === state.user.id ? message.recipientEmail : message.senderEmail;
+  upsertThread(partnerId, partnerEmail);
+  if (state.activeContact && state.activeContact.id === partnerId) {
+    renderMessageLine(message);
+  }
 });
 
-window.addEventListener("click", (event) => {
-    // Check if the clicked target is the modal itself
-    if (event.target === contactListModal) {
-        closeModal(contactListModal);
+async function initChat() {
+  const headers = getAuthHeaders();
+  if (!headers) {
+    requireLogin();
+    return;
+  }
+  try {
+    const response = await axios.get('/api/me', { headers });
+    state.user = response.data.user;
+    socket.emit('register', { token: localStorage.getItem('token') });
+    await Promise.all([loadThreads(), loadContacts()]);
+    loadPendingShare();
+    const recipientFromUrl = new URLSearchParams(window.location.search).get('recipient');
+    if (recipientFromUrl) {
+      recipientInput.value = recipientFromUrl;
+      renderSystemLine(`Ready to message ${recipientFromUrl}`);
+      history.replaceState(null, '', 'chat.html');
     }
+  } catch (err) {
+    requireLogin();
+  }
+}
+
+if (sendBtn) {
+  sendBtn.addEventListener('click', handleSendMessage);
+}
+
+if (messageInput) {
+  messageInput.addEventListener('keyup', (event) => {
+    if (event.key === 'Enter') {
+      handleSendMessage();
+    }
+  });
+}
+
+if (newChatsBtn) {
+  newChatsBtn.addEventListener('click', startNewChat);
+}
+
+if (contactListBtn) {
+  contactListBtn.addEventListener('click', () => {
+    loadContacts(contactSearchInput ? contactSearchInput.value : '');
+    openModal(contactListModal);
+  });
+}
+
+closeButtons.forEach((btn) => {
+  btn.addEventListener('click', (event) => {
+    const modalId = event.target.getAttribute('data-modal');
+    const modalToClose = document.getElementById(modalId);
+    if (modalToClose) {
+      closeModal(modalToClose);
+    }
+  });
 });
 
-function getRecipientIdFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('recipient');
-}
-
-const initialRecipient = getRecipientIdFromUrl();
-
-if (initialRecipient) {
-  recipientInput.value = initialRecipient;
-  loadChatHistory(initialRecipient);
-  history.replaceState(null, '', 'chat.html'); 
-}
-
-// Function to simulate loading a chat history
-function loadChatHistory(recipientName) {
-  recipientInput.value = recipientName;
-  chatLog.innerHTML = ''; 
-  const chatHeader = document.querySelector('.chat-area-content h2');
-  if (chatHeader) {
-      chatHeader.textContent = `Direct Messages with ${recipientName}`;
-  }
-  socket.emit("get_history", { recipient: recipientName });
-  addChatLine(`*Chat history loaded with ${recipientName}. Start typing!*`);
-}
-
-sidebar.addEventListener("click", (event) => {
-  let listItem = event.target.closest('li');
-
-  if (listItem) {
-    const recipientName = listItem.textContent.trim();
-    
-    document.querySelectorAll('.sidebar li').forEach(li => {
-        li.classList.remove('active');
-    });
-
-    listItem.classList.add('active');
-    
-    loadChatHistory(recipientName);
+window.addEventListener('click', (event) => {
+  if (event.target === contactListModal) {
+    closeModal(contactListModal);
   }
 });
+
+if (contactSearchInput) {
+  let searchTimeout = null;
+  contactSearchInput.addEventListener('input', () => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    searchTimeout = setTimeout(() => {
+      loadContacts(contactSearchInput.value);
+    }, 300);
+  });
+}
+
+initChat();
