@@ -48,13 +48,24 @@
         return;
       }
 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        errorBox.textContent = "Please enter a valid email address.";
+        return;
+      }
+
+      if (password.length < 8) {
+        errorBox.textContent = "Password must be at least 8 characters.";
+        return;
+      }
+
       try {
         const response = await axios.post("/api/login", { email, password });
         // Save token or redirect
         localStorage.setItem("token", response.data.token);
         window.location.href = "index.html";
       } catch (error) {
-        errorBox.textContent = "Login failed: " + (error.response?.data?.message || "Please try again.");
+        errorBox.textContent = "Login failed: " + (error.response?.data?.error || "Please try again.");
       }
     });
   </script>

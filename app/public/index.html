@@ -19,8 +19,35 @@
   </div>
 </nav>
 
-  <h1>Available Pets</h1>
-  <button id="search">Get Pets!</button>
+  <div class="search-container">
+    <h1>Available Pets</h1>
+    <form id="search-form">
+      <div class="form-group">
+        <label for="pet-type">Pet Type</label>
+        <select id="pet-type">
+          <option value="">Loading types...</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" id="location" placeholder="Enter Zip Code or City" />
+      </div>
+
+      <div class="form-group">
+        <label for="distance">Distance</label>
+        <select id="distance">
+          <option value="10">10 Miles</option>
+          <option value="25">25 Miles</option>
+          <option value="50" selected>50 Miles</option>
+          <option value="100">100 Miles</option>
+          <option value="250">250 Miles</option>
+        </select>
+      </div>
+
+      <button type="submit" class="search-btn">Find Pets</button>
+    </form>
+  </div>
 
   <div id="pet-grid"></div>
 
