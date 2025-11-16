@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pet Details</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="style.css"> 
     <style>
         nav {
@@ -46,6 +47,15 @@
         .chat-link {
             text-decoration: none; 
             display: block;
+        }
+        .pet-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .pet-actions button {
+            flex: 1 1 180px;
         }
     </style>
 </head>

@@ -60,6 +60,18 @@ button {
 }
 .card h3 { margin: 8px 0 4px; font-size: 16px; }
 .card p  { margin: 0 0 8px; color: #555; font-size: 14px; }
+.card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 10px 12px;
+}
+.card-actions button {
+  margin: 0;
+  flex: 1 1 100px;
+  font-size: 12px;
+  padding: 8px;
+}
 
 /* Auth Buttons */
 
@@ -119,6 +131,42 @@ button {
   text-align: center;
 }
 
+#saved-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+}
+.saved-column {
+  flex: 1 1 300px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 15px;
+}
+.saved-column h3 {
+  margin-top: 0;
+  color: #333333;
+}
+.saved-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.saved-list li {
+  padding: 8px 6px;
+  border-bottom: 1px solid #ededed;
+  cursor: pointer;
+}
+.saved-list li:last-child {
+  border-bottom: none;
+}
+.saved-list li:hover {
+  background-color: #f7f7f7;
+}
+.hidden {
+  display: none !important;
+}
 
 
 
