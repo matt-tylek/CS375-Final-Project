@@ -70,7 +70,6 @@
 
       try {
         const response = await axios.post("/api/register", { email, password });
-        // Save token or redirect
         localStorage.setItem("token", response.data.token);
         window.location.href = "index.html";
       } catch (error) {

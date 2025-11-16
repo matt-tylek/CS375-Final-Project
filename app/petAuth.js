@@ -1,25 +1,19 @@
 const axios = require('axios');
 
-// External token endpoint
 const TOKEN_URL = 'https://api.petfinder.com/v2/oauth2/token';
 
 let tokenData = {
     accessToken: null,
-    expiresIn: 0, // Time (in sec) until expiration
-    expirationTime: 0 // Timestamp when the token expires
+    expiresIn: 0,
+    expirationTime: 0
 };
 
-/**
- * Sends POST request to the Petfinder API to obtain a new access token
- * @param config - The configuration object loaded from env.json
- */
 async function generateNewToken(config) {
     const { api_key, api_secret } = config;
 
     console.log('Generating new Petfinder access token');
 
     try {
-        // Sent as application/x-www-form-urlencoded
         const data = new URLSearchParams();
         data.append('grant_type', 'client_credentials');
         data.append('client_id', api_key);
@@ -34,7 +28,6 @@ async function generateNewToken(config) {
         tokenData.accessToken = response.data.access_token;
         tokenData.expiresIn = response.data.expires_in;
 
-        // Set the new expiration time & set it to refresh early at 90% time
         tokenData.expirationTime = Date.now() + (response.data.expires_in * 1000 * 0.9);
 
         console.log('Petfinder token generated successfully.');
@@ -54,16 +47,10 @@ async function generateNewToken(config) {
     }
 }
 
-/**
- * Schedules the token refresh and provides the current token.
- * @param config - The configuration object loaded from env.json.
- */
 function startTokenManager(config) {
-    // Generate the token immediately on startup
     generateNewToken(config); 
 
-    // Schedule the token refresh
-    const refreshInterval = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const refreshInterval = 30 * 60 * 1000;
 
     setInterval(() => {
         generateNewToken(config);
@@ -72,9 +59,6 @@ function startTokenManager(config) {
     console.log(`Token refresh scheduled every ${refreshInterval / 60000} minutes.`);
 }
 
-/**
- * Returns the currently valid access token.
- */
 function getAccessToken() {
     if (!tokenData.accessToken) {
         console.warn('Access token is not yet initialized or has failed to load.');

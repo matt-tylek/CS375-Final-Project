@@ -1,5 +1,3 @@
---Run: psql "<connection string>" -f db/create_users_table.sql
-
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -38,4 +36,3 @@ CREATE TABLE IF NOT EXISTS starred_animals (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (user_id, pet_id)
 );
-

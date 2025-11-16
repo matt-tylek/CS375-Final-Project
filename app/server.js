@@ -16,10 +16,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-//API Connection
 petAuth.startTokenManager(config);
 
-//DB Connection
 const Pool = pg.Pool;
 const pool = new Pool({
   user: config.user,
@@ -129,7 +127,6 @@ async function authenticateRequest(req, res, next) {
   }
 }
 
-// Test database connection
 pool.connect()
   .then(function (client) {
     console.log(`✅ Connected to database: ${config.database} at ${config.host}`);
@@ -140,13 +137,10 @@ pool.connect()
     console.error('Please check your env.json configuration and ensure your RDS instance is accessible.');
   });
 
-// Make pool available for use in routes
 app.locals.pool = pool;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// GET Pet Listings - filter by Search/Location
-// Returns filtered paginated list of pets
 app.get('/api/pets', async (req, res) => {
   const accessToken = petAuth.getAccessToken();
   if (!accessToken) {
@@ -160,7 +154,7 @@ app.get('/api/pets', async (req, res) => {
     const response = await axios.get(externalApiUrl, {
       params: {
           type: type, 
-          location: location || '10001', // Default to NYC zip code if location is missing
+          location: location || '10001',
           distance: distance || 50,
           limit: 20
       },
@@ -177,7 +171,6 @@ app.get('/api/pets', async (req, res) => {
       console.error('Petfinder Status:', error.response.status);
       console.error('Petfinder Data:', error.response.data);
 
-        // If the token is invalid (401), the auth service should handle the refresh
       if (error.response.status === 401) {
         return res.status(503).json({ 
           error: "External API token error. Retrying authentication.",
@@ -188,15 +181,11 @@ app.get('/api/pets', async (req, res) => {
       return res.status(error.response.status).json(error.response.data);
     }
 
-    // Handle network/connection errors
     res.status(500).json({ error: "Internal Server Error during Petfinder request." });
   }
 });
 
-// GET Single Pet
 app.get('/api/pets/:id', async (req, res) => {
-  // Returns detailed info for one specific pet
-  // reads pet ID from request params
   const accessToken = petAuth.getAccessToken();
   if (!accessToken) {
     return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
@@ -225,15 +214,12 @@ app.get('/api/pets/:id', async (req, res) => {
       return res.status(error.response.status).json(error.response.data);
     }
 
-    // Handle network/connection errors
     res.status(500).json({ error: "Internal Server Error during Petfinder request." });
   }
 }
 );
 
-// Get Pet Types
 app.get('/api/types', async (req, res) => {
-  // Returns list of supported animal types
   const accessToken = petAuth.getAccessToken();
   if (!accessToken) {
     return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
@@ -261,15 +247,12 @@ app.get('/api/types', async (req, res) => {
       return res.status(error.response.status).json(error.response.data);
     }
 
-    // Handle network/connection errors
     res.status(500).json({ error: "Internal Server Error during Petfinder request." });
   }
 }
 );
 
-// Get Pets by Single Pet Type
 app.get('/api/types/:type', async (req, res) => {
-  // Returns information on single animal type
   const accessToken = petAuth.getAccessToken();
   if (!accessToken) {
     return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
@@ -298,13 +281,11 @@ app.get('/api/types/:type', async (req, res) => {
       return res.status(error.response.status).json(error.response.data);
     }
 
-    // Handle network/connection errors
     res.status(500).json({ error: "Internal Server Error during Petfinder request." });
   }
 }
 );
 
-// --- Auth routes ---
 app.post('/api/register', async (req, res) => {
   const { email: rawEmail, password } = req.body || {};
   const email = normalizeEmail(rawEmail);
@@ -535,9 +516,6 @@ app.get('/api/messages/:userId', authenticateRequest, async (req, res) => {
   }
 });
 
-// DB Management - GET, POST, DELETE
-
-// Test database connection endpoint
 app.get('/api/db/test', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW() as current_time, version() as pg_version');
@@ -559,7 +537,6 @@ app.get('/api/db/test', async (req, res) => {
   }
 });
 
-// --- Socket.IO setup ---
 const http = require('http');
 const { Server } = require('socket.io');
 

@@ -1,13 +1,7 @@
-/**
- * Test script to verify AWS RDS/Aurora PostgreSQL connection
- * Run this before starting your main application: node test-db-connection.js
- */
-
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Check if env.json exists
 const envPath = path.join(__dirname, 'env.json');
 if (!fs.existsSync(envPath)) {
   console.error(' Error: env.json file not found!');
@@ -16,7 +10,6 @@ if (!fs.existsSync(envPath)) {
 
 const config = require('./env.json');
 
-// Validate required fields
 const requiredFields = ['user', 'host', 'database', 'password', 'port'];
 const missingFields = requiredFields.filter(field => !config[field]);
 
@@ -26,7 +19,6 @@ if (missingFields.length > 0) {
   process.exit(1);
 }
 
-// Create connection pool
 const pool = new Pool({
   user: config.user,
   host: config.host,
@@ -34,7 +26,7 @@ const pool = new Pool({
   password: config.password,
   port: config.port,
   ssl: config.ssl !== undefined ? config.ssl : false,
-  connectionTimeoutMillis: 5000, // 5 second timeout
+  connectionTimeoutMillis: 5000,
 });
 
 console.log('Attempting to connect to database...');
@@ -66,4 +58,3 @@ pool.query('SELECT NOW() as current_time, version() as pg_version, current_datab
     pool.end();
     process.exit(1);
   });
-
