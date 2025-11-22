@@ -1,5 +1,23 @@
 
 const stripe_publishable_key = "pk_test_51SW0gaBUMq7sqMyQGIbEviEFluvNQbHu5n9scLXDq7uoB8lkBRogbK7PHUwqMU1HlcalubsXRXKOvIJuNqeIhpPN00IOvSfldr"
+const params = new URLSearchParams(window.location.search);
+const status = params.get("status");
+const petIdFromUrl = params.get("petId");
+
+if (status === "success" && petIdFromUrl) {
+  fetch(`/api/checkout/mark-sold/${petIdFromUrl}`, {
+    method: "POST",
+  })
+    .then(() => {
+      console.log("Pet marked as SOLD");
+      alert("Payment successful! This pet is now marked as SOLD.");
+    })
+    .catch((err) => console.error("Failed to mark sold:", err));
+}
+
+
+
+
 function renderAttribute(label, value) {
   if (value === true) {
     return `<div class="attribute-status"><strong>${label}:</strong> Yes</div>`;
@@ -114,7 +132,7 @@ function buyButtonHandler(petId) {
       const data = await res.json();
 
       if (!data.id) {
-        alert("Failed to create checkout session.");
+        alert(data.error);
         return;
       }
 

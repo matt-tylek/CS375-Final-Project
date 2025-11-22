@@ -163,6 +163,15 @@ const getBaseUrl = (req) => {
 };
 
 
+router.post('/checkout/mark-sold/:id', (req, res) => {
+  const petId = req.params.id;
+  price_cache[petId] = "SOLD";
+  console.log(`Pet ${petId} marked as SOLD`);
+  res.json({ success: true });
+});
+
+
+
 router.get('/checkout/pets/:id', async (req, res) => {
   const petId = req.params.id;
   const price = price_cache[petId];
