@@ -87,6 +87,9 @@ function attachSocialShare(pet) {
 }
 
 function renderPetDetailsFromStorage() {
+  
+  // generate random price between $500 and $5000
+  const pet_price = Math.floor(Math.random() * (5000 - 500 + 1)) + 500;
   const detailContainer = document.getElementById('pet-details');
   const petJson = localStorage.getItem('selectedPet');
   if (!detailContainer) return;
@@ -122,6 +125,7 @@ function renderPetDetailsFromStorage() {
                 <p><strong>Status:</strong> <span style="font-weight: bold; color: green;">${pet.status}</span></p>
                 <p><strong>ID:</strong> ${pet.id}</p>
                 <p><strong>Age:</strong> ${pet.age}</p>
+                <p><strong>Price:</strong> $${pet_price}</p>
                 <p><strong>Gender:</strong> ${pet.gender}</p>
                 <p><strong>Size:</strong> ${pet.size}</p>
                 <p><strong>Coat:</strong> ${pet.coat || 'N/A'}</p>

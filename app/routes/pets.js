@@ -57,6 +57,7 @@ router.get('/pets/:id', async (req, res) => {
         Authorization: `Bearer ${accessToken}`
       }
     });
+    console.log('Fetched pet data:', response.data);
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching pet from Petfinder:', error.message);
