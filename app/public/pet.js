@@ -29,6 +29,7 @@ async function savePet(endpoint, pet) {
   }
 }
 
+
 function attachPetActions(pet) {
   const wishlistBtn = document.getElementById('wishlistBtn');
   if (wishlistBtn) {
@@ -46,6 +47,7 @@ function attachPetActions(pet) {
     });
   }
 }
+
 
 function attachSocialShare(pet) {
   const socialShareBtn = document.getElementById('socialShareBtn');
@@ -86,10 +88,14 @@ function attachSocialShare(pet) {
   });
 }
 
-function renderPetDetailsFromStorage() {
-  
-  // generate random price between $500 and $5000
-  const pet_price = Math.floor(Math.random() * (5000 - 500 + 1)) + 500;
+
+async function fetchPetPrice(petId) {
+  const response = await axios.get(`/api/price/pets/${petId}`);
+  return response.data.price;
+}
+
+
+async function renderPetDetailsFromStorage() {
   const detailContainer = document.getElementById('pet-details');
   const petJson = localStorage.getItem('selectedPet');
   if (!detailContainer) return;
@@ -99,6 +105,7 @@ function renderPetDetailsFromStorage() {
   }
   try {
     const pet = JSON.parse(petJson);
+    const pet_price = await fetchPetPrice(pet.id);
     const breeds = pet.breeds || {};
     const primaryBreed = breeds.primary || '';
     const secondaryBreed = breeds.secondary ? ` / ${breeds.secondary}` : '';

@@ -2,6 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const petAuth = require('../petAuth');
 
+const price_cache = {};
+
 const router = express.Router();
 
 router.get('/pets', async (req, res) => {
@@ -138,5 +140,13 @@ router.get('/types/:type', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error during Petfinder request." });
   }
 });
+
+router.get('/price/pets/:id', (req, res) => {
+  // fetch price from cache using petid. If not found, generate random price between $500 and $5000
+  const petId = req.params.id;
+  const price = price_cache[petId] || (Math.floor(Math.random() * (5000 -  500 + 1)) + 500);
+  price_cache[petId] = price;
+  res.json({"price":price});
+})
 
 module.exports = router;
