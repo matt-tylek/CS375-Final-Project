@@ -1,10 +1,52 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const DEFAULT_LOCATION_TEXT = 'Philadelphia, PA';
+    const DEFAULT_ZIP = '19104';
 
-    // const map = L.map('map').setView([39.95, -75.16], 10);
+    const typeDropdown = document.getElementById('pet-type');
+    const distanceSelect = document.getElementById('distance');
+    const locationInput = document.getElementById('location');
+    const searchForm = document.getElementById('search-form');
+    const petGrid = document.getElementById('pet-grid');
+    const wishlistList = document.getElementById('wishlist-list');
+    const starredList = document.getElementById('starred-list');
 
-    // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    // attribution: '© OpenStreetMap contributors'
-    // }).addTo(map);
+    const FALLBACK_PET_TYPES = [
+        'Dog',
+        'Cat',
+        'Rabbit',
+        'Bird',
+        'Horse',
+        'Small & Furry',
+        'Barnyard',
+        'Scales, Fins & Other'
+    ];
+
+    function applyTypesToDropdown(dropdown, types) {
+        if (!dropdown) return;
+        dropdown.innerHTML = '<option value="">All Types</option>';
+        types.forEach((entry) => {
+            const label = typeof entry === 'string' ? entry : entry?.name;
+            if (!label) return;
+            const option = document.createElement('option');
+            option.value = label;
+            option.textContent = label;
+            dropdown.appendChild(option);
+        });
+    }
+
+    async function populatePetTypes() {
+        if (!typeDropdown) return;
+        applyTypesToDropdown(typeDropdown, FALLBACK_PET_TYPES);
+        try {
+            const response = await axios.get('/api/types');
+            const types = Array.isArray(response.data.types) ? response.data.types : [];
+            if (types.length > 0) {
+                applyTypesToDropdown(typeDropdown, types);
+            }
+        } catch (error) {
+            console.error('Error fetching pet types:', error);
+        }
+    }
 
     function getAuthHeaders() {
         const token = localStorage.getItem('token');
@@ -12,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return { Authorization: `Bearer ${token}` };
     }
 
-    async function fetchPets(params) { 
+    async function fetchPets(params) {
         try {
             const response = await axios.get('/api/pets', { params });
             const pets = response.data.animals;
@@ -38,8 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderSavedList(elementId, items, emptyText) {
-        const container = document.getElementById(elementId);
+    function renderSavedList(container, items, emptyText) {
         if (!container) return;
         container.innerHTML = '';
         if (!items || items.length === 0) {
@@ -54,8 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const summary = [pet.name, pet.type].filter(Boolean).join(' · ');
             li.textContent = summary || 'Pet details pending';
             li.addEventListener('click', () => {
-            localStorage.setItem('selectedPet', JSON.stringify(pet));
-            window.location.href = 'pet.html';
+                localStorage.setItem('selectedPet', JSON.stringify(pet));
+                window.location.href = 'pet.html';
             });
             container.appendChild(li);
         });
@@ -64,20 +105,20 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadSavedLists() {
         const headers = getAuthHeaders();
         if (!headers) {
-            renderSavedList('wishlist-list', [], 'Login to build your wishlist.');
-            renderSavedList('starred-list', [], 'Login to star animals.');
+            renderSavedList(wishlistList, [], 'Login to build your wishlist.');
+            renderSavedList(starredList, [], 'Login to star animals.');
             return;
         }
         try {
             const [wishlistResp, starredResp] = await Promise.all([
-            axios.get('/api/wishlist', { headers }),
-            axios.get('/api/starred', { headers })
+                axios.get('/api/wishlist', { headers }),
+                axios.get('/api/starred', { headers })
             ]);
-            renderSavedList('wishlist-list', wishlistResp.data.items, 'Wishlist is empty.');
-            renderSavedList('starred-list', starredResp.data.items, 'No starred animals yet.');
+            renderSavedList(wishlistList, wishlistResp.data.items, 'Wishlist is empty.');
+            renderSavedList(starredList, starredResp.data.items, 'No starred animals yet.');
         } catch (err) {
-            renderSavedList('wishlist-list', [], 'Unable to load wishlist.');
-            renderSavedList('starred-list', [], 'Unable to load starred animals.');
+            renderSavedList(wishlistList, [], 'Unable to load wishlist.');
+            renderSavedList(starredList, [], 'Unable to load starred animals.');
         }
     }
 
@@ -125,73 +166,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showPets(pets) {
-        const grid = document.getElementById('pet-grid');
-        if (!grid) return;
-        grid.innerHTML = '';
+        if (!petGrid) return;
+        petGrid.innerHTML = '';
         if (!Array.isArray(pets) || pets.length === 0) {
-            grid.innerHTML = '<p>No pets found.</p>';
+            petGrid.innerHTML = '<p>No pets found.</p>';
             return;
         }
         pets.forEach((pet) => {
-            grid.appendChild(createPetCard(pet));
+            petGrid.appendChild(createPetCard(pet));
         });
     }
 
-    const typeDropdown = document.getElementById('pet-type').value;
-    const distanceSelect = document.getElementById('distance').value;
-    const locationInput = document.getElementById('location');
+    function getSearchLocation() {
+        const manualLocation = locationInput ? locationInput.value.trim() : '';
+        if (manualLocation) {
+            return manualLocation;
+        }
+        return DEFAULT_ZIP;
+    }
 
     async function searchForPets() {
-        const locationText = locationInput.value;
-        locationParam = locationText;
-
-        // // Check if the text input has a value
-        // if (locationText.trim() !== '') {
-        //     locationParam = locationText;
-        // } else {
-        // // If no, get the map's center
-        //     const center = map.getCenter();
-        //     locationParam = `${center.lat},${center.lng}`;
-        // }
-        
-        const type = typeDropdown.value;
-        const distance = distanceSelect.value;
-
-        const searchParams = { type, locationParam, distance };
-
+        if (petGrid) {
+            petGrid.innerHTML = '<p>Loading pets...</p>';
+        }
+        const type = typeDropdown ? typeDropdown.value : '';
+        const distance = distanceSelect ? distanceSelect.value : 50;
+        const location = getSearchLocation();
+        const searchParams = { type, distance, location };
         const pets = await fetchPets(searchParams);
         showPets(pets);
     }
 
-    const searchForm = document.getElementById('search-form');
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
-            e.preventDefault(); 
-            searchForPets();    
+            e.preventDefault();
+            searchForPets();
         });
-    }
-
-    async function populatePetTypes() {
-        const typeDropdown = document.getElementById('pet-type');
-        if (!typeDropdown) return; 
-
-        try {
-            const response = await axios.get('/api/types');
-            const types = response.data.types;
-
-            typeDropdown.innerHTML = '<option value="">All Types</option>'; 
-            
-            types.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type.name;   
-            option.textContent = type.name;
-            typeDropdown.appendChild(option);
-            });
-
-        } catch (error) {
-            console.error('Error fetching pet types:', error);
-            typeDropdown.innerHTML = '<option value="">Could not load types</option>';
-        }
     }
 
     const openModalBtn = document.getElementById('openPostModalBtn');
@@ -201,17 +211,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalSuccessMessage = document.getElementById('modalSuccessMessage');
     const modalFormContainer = document.getElementById('modalFormContainer');
 
-    if (openModalBtn) {
+    if (openModalBtn && modal) {
         openModalBtn.addEventListener('click', () => {
-        modal.style.display = 'flex';
+            modal.style.display = 'flex';
         });
     }
 
     function resetModal() {
+        if (!modal || !postPetForm) return;
         modal.style.display = 'none';
-        modalSuccessMessage.style.display = 'none'; 
-        modalFormContainer.style.display = 'block';
-        postPetForm.reset(); 
+        if (modalSuccessMessage) {
+            modalSuccessMessage.style.display = 'none';
+        }
+        if (modalFormContainer) {
+            modalFormContainer.style.display = 'block';
+        }
+        postPetForm.reset();
     }
 
     if (closeModalBtn) {
@@ -219,9 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
             resetModal();
         });
     }
-    
+
     window.addEventListener('click', (e) => {
-        if (e.target == modal) {
+        if (modal && e.target === modal) {
             resetModal();
         }
     });
@@ -237,11 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 contact: document.getElementById('postContactEmail').value,
             };
             console.log('Pet to be posted:', petData);
-            modalFormContainer.style.display = 'none';
-            modalSuccessMessage.style.display = 'block';
+            if (modalFormContainer) {
+                modalFormContainer.style.display = 'none';
+            }
+            if (modalSuccessMessage) {
+                modalSuccessMessage.style.display = 'block';
+            }
         });
     }
 
     loadSavedLists();
     populatePetTypes();
+    searchForPets();
 });

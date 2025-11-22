@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PetFinder • Shelter Map</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhpmA9PjXuPXLrGzYtHVPSoEwleftNbsMvIY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #f7f9fb;
+      color: #1f2933;
+      min-height: 100vh;
+    }
+    nav {
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+      background: #fff;
+    }
+    .map-hero {
+      max-width: 1100px;
+      margin: 30px auto 20px;
+      padding: 28px;
+      border-radius: 20px;
+      background: radial-gradient(circle at top left, rgba(13, 110, 253, 0.12), rgba(255, 255, 255, 0.95));
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08);
+    }
+    .map-hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 3vw, 2.5rem);
+    }
+    .map-hero p {
+      margin: 0;
+      color: #5f6b7a;
+      line-height: 1.5;
+    }
+    .map-layout {
+      max-width: 1200px;
+      margin: 0 auto 40px;
+      display: grid;
+      grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+      gap: 22px;
+      padding: 0 16px;
+    }
+    .map-panel {
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 25px 45px rgba(15, 23, 42, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .map-panel h2 {
+      margin: 0;
+      color: #122029;
+    }
+    .map-panel p {
+      margin: 0;
+      color: #5f6b7a;
+      font-size: 0.95rem;
+    }
+    .map-panel ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+    .shelter-card {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: #fdfdfd;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+      cursor: pointer;
+      transition: transform 0.15s ease, border 0.15s ease;
+    }
+    .shelter-card:hover,
+    .shelter-card.active {
+      border-color: #0d6efd;
+      transform: translateY(-2px);
+    }
+    .shelter-card h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+    .shelter-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #5f6b7a;
+    }
+    .shelter-card a {
+      display: inline-flex;
+      margin-top: 8px;
+      color: #0d6efd;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+    .map-container {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 35px 65px rgba(15, 23, 42, 0.18);
+      min-height: 520px;
+      background: #d7e3fb;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+    }
+    @media (max-width: 980px) {
+      .map-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <h2>PetFinder</h2>
+    <div class="auth-buttons">
+      <a href="index.html"><button>Home</button></a>
+      <a href="map.html"><button class="active">Map</button></a>
+      <a href="login.html"><button>Login</button></a>
+      <a href="signup.html"><button>Sign Up</button></a>
+      <a href="chat.html"><button class="chat-btn">💬 Chat</button></a>
+    </div>
+  </nav>
+
+  <section class="map-hero">
+    <h1>Philly shelter landscape</h1>
+    <p>Browse the major adoption partners we work with across the region. Hover the map markers or use the left column to focus on a shelter and get quick access to their details.</p>
+  </section>
+
+  <section class="map-layout">
+    <aside class="map-panel">
+      <div>
+        <p style="text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.75rem; color: #8693a7;">Rescue partners</p>
+        <h2>Featured shelters</h2>
+        <p>Click a shelter to highlight it on the map. Tap the website link to learn more.</p>
+      </div>
+      <ul id="shelterList"></ul>
+    </aside>
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
+  </section>
+
+  <script src="map.js"></script>
+</body>
+</html>
