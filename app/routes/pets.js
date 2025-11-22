@@ -1,10 +1,15 @@
 const express = require('express');
 const axios = require('axios');
 const petAuth = require('../petAuth');
+const {stripe_secret_key} = require('../config');
+const Stripe = require('stripe');
+const stripe = new Stripe(stripe_secret_key);
+
 
 const price_cache = {};
 
 const router = express.Router();
+
 
 router.get('/pets', async (req, res) => {
   const accessToken = petAuth.getAccessToken();
@@ -149,4 +154,54 @@ router.get('/price/pets/:id', (req, res) => {
   res.json({"price":price});
 })
 
+
+const getBaseUrl = (req) => {
+  if (req.headers.origin) return req.headers.origin; // sent by browser
+  const protocol = req.protocol || 'http';           // 'http' in dev, 'https' in prod behind load balancer
+  const host = req.get('host');                      // includes host:port
+  return `${protocol}://${host}`;
+};
+
+
+router.get('/checkout/pets/:id', async (req, res) => {
+  const petId = req.params.id;
+  const price = price_cache[petId];
+  const baseUrl = getBaseUrl(req);
+
+  if (!price) {
+    return res.status(404).json({ error: "Price not found for the specified pet." });
+  }
+
+  if (price == "SOLD") {
+    return res.status(400).json({"error": "Pet already sold."});
+  };
+
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Adoption Fee for Pet ID: ${petId}`,
+          },
+          unit_amount: price * 100,
+        },
+        quantity: 1,
+      },
+      ],
+      mode: 'payment',
+      success_url: `${baseUrl}/pet.html?petId=${petId}&status=success`,
+      cancel_url: `${baseUrl}/pet.html?petId=${petId}&status=cancel`,
+    });
+    res.json({id: session.id});
+  } catch (error) {
+    res.status(500).json({error: "Failed to create checkout session"});
+  }
+});
+
 module.exports = router;
+
+

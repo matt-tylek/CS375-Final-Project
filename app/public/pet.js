@@ -1,3 +1,5 @@
+
+const stripe_publishable_key = "pk_test_51SW0gaBUMq7sqMyQGIbEviEFluvNQbHu5n9scLXDq7uoB8lkBRogbK7PHUwqMU1HlcalubsXRXKOvIJuNqeIhpPN00IOvSfldr"
 function renderAttribute(label, value) {
   if (value === true) {
     return `<div class="attribute-status"><strong>${label}:</strong> Yes</div>`;
@@ -94,6 +96,41 @@ async function fetchPetPrice(petId) {
   return response.data.price;
 }
 
+function buyButtonHandler(petId) {
+  const buyButton = document.getElementById('buyBtn');
+
+  if (!buyButton) return;
+
+  buyButton.addEventListener('click', async () => {
+    const petJson = localStorage.getItem('selectedPet');
+    if (!petJson) {
+      alert("Pet data not found. Please return to the search page.");
+      return;
+    }
+
+    try {
+      const pet = JSON.parse(petJson);
+      const res = await fetch(`/api/checkout/pets/${petId}`);
+      const data = await res.json();
+
+      if (!data.id) {
+        alert("Failed to create checkout session.");
+        return;
+      }
+
+      const stripe = Stripe(stripe_publishable_key);
+      const {error} = await stripe.redirectToCheckout({ sessionId: data.id });
+      if (error) {
+        console.error("Stripe checkout error:", error.message);
+        alert("Failed to redirect to checkout.");
+      }
+    } catch (error) {
+      alert("Failed to initiate checkout process.");
+    }
+  }
+  )
+}
+
 
 async function renderPetDetailsFromStorage() {
   const detailContainer = document.getElementById('pet-details');
@@ -151,6 +188,7 @@ async function renderPetDetailsFromStorage() {
                 <div class="pet-actions">
                     <button id="wishlistBtn">Add to Wishlist</button>
                     <button id="starBtn">Star Animal</button>
+                    <button id="buyBtn"> Adopt ${pet.name}</button>
                 </div>
                 <div class="social-share">
                     <h3 class="section-header">Share ${pet.name}</h3>
@@ -187,6 +225,7 @@ async function renderPetDetailsFromStorage() {
     `;
     attachPetActions(pet);
     attachSocialShare(pet);
+    buyButtonHandler(pet.id);
   } catch (error) {
     console.error('Failed to render pet data:', error);
     detailContainer.innerHTML = '<h1>Error loading pet details</h1>';
