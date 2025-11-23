@@ -107,11 +107,13 @@ router.get('/pets', async (req, res) => {
         }
     });
 
-    const dbQuery = await dbPool.query(
-        `SELECT * FROM user_pet_listings 
-         WHERE type = $1 AND status = 'adoptable'`,
-        [type]
-    );
+    // Bug: fetching pets won't work with querying DB
+    // const dbQuery = await dbPool.query(
+    //     `SELECT * FROM user_pet_listings 
+    //      WHERE type = $1 AND status = 'adoptable'`,
+    //     [type]
+    // );
+    const dbQuery = Promise.resolve({ rows: [] });
 
   try {
     const [petfinderResponse, dbResponse] = await Promise.all([externalApiCall, dbQuery]);
