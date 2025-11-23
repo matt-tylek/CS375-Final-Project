@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchPets(params) {
         try {
             const response = await axios.get('/api/pets', { params });
-            const pets = response.data.animals;
+            const pets = response.data.pets;
             return Array.isArray(pets) ? pets : [];
         } catch (error) {
             console.error('Error fetching pets:', error.response ? error.response.data : error.message);
@@ -194,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const location = getSearchLocation();
         const searchParams = { type, distance, location };
         const pets = await fetchPets(searchParams);
+        console.log(pets);
         showPets(pets);
     }
 
@@ -242,26 +243,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (postPetForm) {
-        postPetForm.addEventListener('submit', (e) => {
+        postPetForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const petData = {
+                // Core Details
                 name: document.getElementById('postPetName').value,
-                type: document.getElementById('postPetType').value,
-                photo: document.getElementById('postPetPhoto').value,
+                type: document.getElementById('postPetType').value, 
+                species: document.getElementById('postPetType').value, 
+                age: document.getElementById('postPetAge').value,
+                gender: document.getElementById('postPetGender').value,
+                size: document.getElementById('postPetSize').value,
+                coat: document.getElementById("postPetCoat").value,
+                
+                // Breed Details
+                primary_breed: document.getElementById('postPrimaryBreed').value,
+                mixed_breed: document.getElementById('postMixedBreed').checked, 
+
+                // Location & Contact
+                zipcode: document.getElementById('postZipcode').value, 
+                city: document.getElementById('postCity').value,
+                state_code: document.getElementById('postStateCode').value,
+                contact_email: document.getElementById('postContactEmail').value,
+                contact_phone: document.getElementById('postContactPhone').value,
+
+                // Attributes
+                is_spayed_neutered: document.getElementById('postSpayedNeutered').checked,
+                is_house_trained: document.getElementById('postHouseTrained').checked,
+                is_shots_current: document.getElementById('postShotsCurrent').checked,
+                is_special_needs: document.getElementById('postSpecialNeeds').checked,
+                is_declawed: document.getElementById('postDeclawed').checked,
+                good_with_children: document.getElementById('postGoodChildren').checked,
+                good_with_dogs: document.getElementById('postGoodDogs').checked,
+                good_with_cats: document.getElementById('postGoodCats').checked,
+                
+                // Media & Description
+                primary_photo_url: document.getElementById('postPetPhotoUrl').value,
                 description: document.getElementById('postPetDescription').value,
-                contact: document.getElementById('postContactEmail').value,
             };
-            console.log('Pet to be posted:', petData);
-            if (modalFormContainer) {
-                modalFormContainer.style.display = 'none';
-            }
-            if (modalSuccessMessage) {
-                modalSuccessMessage.style.display = 'block';
+
+
+            try {
+                const response = await fetch('/api/user/pets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // If user authentication, add token here:
+                        // 'Authorization': 'Bearer ' + userToken 
+                    },
+                    body: JSON.stringify(petData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Server error posting pet:', errorData);
+                    alert(`Failed to post pet: ${errorData.error || 'Unknown error'}`);
+                    return;
+                }
+
+                // Success handling
+                console.log('Pet successfully posted:', petData);
+                if (modalFormContainer) {
+                    modalFormContainer.style.display = 'none';
+                }
+                if (modalSuccessMessage) {
+                    modalSuccessMessage.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Network or fetch error:', error);
+                alert('A network error occurred. Please try again.');
             }
         });
     }
 
     loadSavedLists();
     populatePetTypes();
-    searchForPets();
+    //searchForPets();
 });
