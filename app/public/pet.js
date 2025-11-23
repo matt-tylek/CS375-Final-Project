@@ -28,23 +28,16 @@ function renderAttribute(label, value) {
   return `<div class="attribute-status"><strong>${label}:</strong> N/A</div>`;
 }
 
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  return { Authorization: `Bearer ${token}` };
-}
-
 async function savePet(endpoint, pet) {
-  const headers = getAuthHeaders();
-  if (!headers) {
-    alert('Login to save pets.');
-    return;
-  }
   try {
     const petKey = pet.id || `${pet.type || 'pet'}-${Date.now()}`;
-    await axios.post(`/api/${endpoint}`, { petId: petKey, pet }, { headers });
+    await axios.post(`/api/${endpoint}`, { petId: petKey, pet });
     alert('Saved.');
   } catch (err) {
+    if (err.response && err.response.status === 401) {
+      alert('Login to save pets.');
+      return;
+    }
     alert('Unable to save this pet.');
   }
 }

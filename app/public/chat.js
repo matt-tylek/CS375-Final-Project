@@ -21,12 +21,6 @@ const state = {
   pendingShare: null
 };
 
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  return { Authorization: `Bearer ${token}` };
-}
-
 function requireLogin() {
   window.location.href = 'login.html';
 }
@@ -106,13 +100,15 @@ function renderChatHistory(messages) {
 }
 
 async function loadThreads() {
-  const headers = getAuthHeaders();
-  if (!headers) return;
   try {
-    const response = await axios.get('/api/chat/threads', { headers });
+    const response = await axios.get('/api/chat/threads');
     state.threads = response.data.threads || [];
     renderThreadList();
   } catch (err) {
+    if (err.response && err.response.status === 401) {
+      requireLogin();
+      return;
+    }
     console.error('Unable to load threads:', err.message);
   }
 }
@@ -152,13 +148,15 @@ function upsertThread(userId, email) {
 }
 
 async function loadContacts(query = '') {
-  const headers = getAuthHeaders();
-  if (!headers) return;
   try {
-    const response = await axios.get('/api/users', { headers, params: query ? { search: query } : {} });
+    const response = await axios.get('/api/users', { params: query ? { search: query } : {} });
     state.contacts = response.data.users || [];
     renderContactResults();
   } catch (err) {
+    if (err.response && err.response.status === 401) {
+      requireLogin();
+      return;
+    }
     console.error('Unable to load contacts:', err.message);
   }
 }
@@ -184,10 +182,8 @@ function renderContactResults() {
 }
 
 async function loadChatHistory(userId, email) {
-  const headers = getAuthHeaders();
-  if (!headers) return;
   try {
-    const response = await axios.get(`/api/messages/${userId}`, { headers });
+    const response = await axios.get(`/api/messages/${userId}`);
     state.activeContact = { id: userId, email };
     recipientInput.value = email;
     const chatHeader = document.querySelector('.chat-area-content h2');
@@ -197,6 +193,10 @@ async function loadChatHistory(userId, email) {
     renderChatHistory(response.data.messages);
     upsertThread(userId, email);
   } catch (err) {
+    if (err.response && err.response.status === 401) {
+      requireLogin();
+      return;
+    }
     renderSystemLine('Unable to load chat history.');
   }
 }
@@ -309,15 +309,10 @@ socket.on('private_message', (message) => {
 });
 
 async function initChat() {
-  const headers = getAuthHeaders();
-  if (!headers) {
-    requireLogin();
-    return;
-  }
   try {
-    const response = await axios.get('/api/me', { headers });
+    const response = await axios.get('/api/me');
     state.user = response.data.user;
-    socket.emit('register', { token: localStorage.getItem('token') });
+    socket.emit('register');
     await Promise.all([loadThreads(), loadContacts()]);
     loadPendingShare();
     const recipientFromUrl = new URLSearchParams(window.location.search).get('recipient');
