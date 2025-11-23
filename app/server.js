@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require('path');
 const http = require('http');
+const cookieParser = require('cookie-parser');
 const petAuth = require('./petAuth');
 const { config } = require('./config');
 const setupSocket = require('./socket');
@@ -16,6 +17,7 @@ const hostname = process.env.HOST || "localhost";
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 petAuth.startTokenManager(config);

@@ -48,12 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function getAuthHeaders() {
-        const token = localStorage.getItem('token');
-        if (!token) return null;
-        return { Authorization: `Bearer ${token}` };
-    }
-
     async function fetchPets(params) {
         try {
             const response = await axios.get('/api/pets', { params });
@@ -66,16 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function savePet(endpoint, pet) {
-        const headers = getAuthHeaders();
-        if (!headers) {
-            alert('Login to save pets.');
-            return;
-        }
         try {
             const petKey = pet.id || `${pet.type || 'pet'}-${Date.now()}`;
-            await axios.post(`/api/${endpoint}`, { petId: petKey, pet }, { headers });
+            await axios.post(`/api/${endpoint}`, { petId: petKey, pet });
             await loadSavedLists();
         } catch (err) {
+            if (err.response && err.response.status === 401) {
+                alert('Login to save pets.');
+                return;
+            }
             alert('Unable to save this pet.');
         }
     }
@@ -103,20 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadSavedLists() {
-        const headers = getAuthHeaders();
-        if (!headers) {
-            renderSavedList(wishlistList, [], 'Login to build your wishlist.');
-            renderSavedList(starredList, [], 'Login to star animals.');
-            return;
-        }
         try {
             const [wishlistResp, starredResp] = await Promise.all([
-                axios.get('/api/wishlist', { headers }),
-                axios.get('/api/starred', { headers })
+                axios.get('/api/wishlist'),
+                axios.get('/api/starred')
             ]);
             renderSavedList(wishlistList, wishlistResp.data.items, 'Wishlist is empty.');
             renderSavedList(starredList, starredResp.data.items, 'No starred animals yet.');
         } catch (err) {
+            if (err.response && err.response.status === 401) {
+                renderSavedList(wishlistList, [], 'Login to build your wishlist.');
+                renderSavedList(starredList, [], 'Login to star animals.');
+                return;
+            }
             renderSavedList(wishlistList, [], 'Unable to load wishlist.');
             renderSavedList(starredList, [], 'Unable to load starred animals.');
         }

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/chat/threads', authenticateRequest, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT other_id AS user_id, email, MAX(created_at) AS last_message_at
+      `SELECT other_id AS user_id, email, MAX(m.created_at) AS last_message_at
        FROM (
          SELECT CASE WHEN sender_id = $1 THEN recipient_id ELSE sender_id END AS other_id, created_at
          FROM messages

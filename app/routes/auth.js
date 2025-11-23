@@ -2,10 +2,17 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db');
-const { authenticateRequest, ensureJwtSecret, JWT_SECRET } = require('../middleware/auth');
+const {
+  authenticateRequest,
+  ensureJwtSecret,
+  JWT_SECRET,
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions
+} = require('../middleware/auth');
 
 const router = express.Router();
 const BCRYPT_ROUNDS = 12;
+const clearCookieOptions = { ...sessionCookieOptions, maxAge: 0 };
 
 function normalizeEmail(email) {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -19,6 +26,13 @@ function isValidPassword(password) {
   return typeof password === 'string' && password.length >= 8;
 }
 
+function issueToken(res, user) {
+  ensureJwtSecret();
+  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+  res.cookie(SESSION_COOKIE_NAME, token, sessionCookieOptions);
+  return token;
+}
+
 router.post('/register', async (req, res) => {
   const { email: rawEmail, password } = req.body || {};
   const email = normalizeEmail(rawEmail);
@@ -28,7 +42,6 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    ensureJwtSecret();
     const existing = await pool.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: 'Email already registered.' });
@@ -41,7 +54,7 @@ router.post('/register', async (req, res) => {
     );
 
     const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+    const token = issueToken(res, user);
     res.status(201).json({ token, user });
   } catch (err) {
     console.error('Register error:', err.message);
@@ -67,7 +80,6 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    ensureJwtSecret();
     const result = await pool.query(
       'SELECT id, email, password_hash FROM users WHERE email = $1 LIMIT 1',
       [email]
@@ -83,7 +95,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+    const token = issueToken(res, user);
     res.json({ token, user: { id: user.id, email: user.email } });
   } catch (err) {
     console.error('Login error:', err.message);
@@ -118,6 +130,11 @@ router.get('/users', authenticateRequest, async (req, res) => {
     console.error('Users list error:', err.message);
     res.status(500).json({ error: 'Unable to fetch users.' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie(SESSION_COOKIE_NAME, clearCookieOptions);
+  res.json({ success: true });
 });
 
 module.exports = router;
