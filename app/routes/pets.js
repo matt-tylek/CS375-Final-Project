@@ -5,7 +5,7 @@ const {stripe_secret_key} = require('../config');
 const Stripe = require('stripe');
 const stripe = new Stripe(stripe_secret_key);
 const { getCoordsFromZip, calculateDistanceInMiles } = require('./utils');
-const { pool: dbPool } = require('../db');
+const { pool } = require('../db');
 
 
 const price_cache = {};
@@ -107,13 +107,11 @@ router.get('/pets', async (req, res) => {
         }
     });
 
-    // Bug: fetching pets won't work with querying DB
-    // const dbQuery = await dbPool.query(
-    //     `SELECT * FROM user_pet_listings 
-    //      WHERE type = $1 AND status = 'adoptable'`,
-    //     [type]
-    // );
-    const dbQuery = Promise.resolve({ rows: [] });
+  const dbQuery = await pool.query(
+      `SELECT * FROM user_pet_listings 
+        WHERE type = $1 AND status = 'adoptable'`,
+      [type]
+  );
 
   try {
     const [petfinderResponse, dbResponse] = await Promise.all([externalApiCall, dbQuery]);
@@ -225,7 +223,7 @@ router.post('/user/pets', async (req, res) => {
       petData.primary_photo_url   
     ];
     
-    const result = await dbPool.query(queryText, queryValues);
+    const result = await pool.query(queryText, queryValues);
     
     res.status(201).json({ 
         message: "Pet listing created successfully", 
@@ -245,7 +243,7 @@ router.get('/pets/:id', async (req, res) => {
 
       const customDbId = petId.replace('CUSTOM-', '');
       try {
-        const dbResponse = await dbPool.query(
+        const dbResponse = await pool.query(
           `SELECT * FROM user_pet_listings WHERE id = $1`,
           [customDbId]
         );
