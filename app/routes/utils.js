@@ -1,14 +1,6 @@
-const geocoder = require('node-geocoder');
+const zipcodes = require('zipcodes');
 
-// Configure the Geocoder to use Nominatim 
-const options = {
-    provider: 'openstreetmap', 
-    httpAdapter: 'https',
-    userAgent: 'PetFinder', 
-    formatter: null
-};
-
-const localZipData = {
+const localZipDataFallback = {
     "19104": { lat: 39.9575, lon: -75.2104 }, // West Philly
     "10001": { lat: 40.7505, lon: -73.9934 }, // Manhattan
     "19380": { lat: 39.9701, lon: -75.6033 }, // West Chester, PA
@@ -16,18 +8,17 @@ const localZipData = {
 
 const EARTH_RADIUS_METERS = 6371000;
 
-//const geo = geocoder(options); 
+function getCoordsFromZip(zipcode) {
+    const location = zipcodes.lookup(zipcode);
 
-async function getCoordsFromZip(zipcode) {
-    if (localZipData[zipcode]) {
-        console.log(`[Local Geo] Using cached coordinates for ${zipcode}`);
-        return localZipData[zipcode];
+    if (!location) {
+        throw new Error(`Coordinates not found for zip code: ${zipcode}`);
     }
-    // const res = await geo.geocode(zipcode);
-    // if (res.length === 0) {
-    //     throw new Error(`Coordinates not found for zip code: ${zipcode}`);
-    // }
-    // return { lat: res[0].latitude, lon: res[0].longitude };
+
+    return { 
+        lat: location.latitude, 
+        lon: location.longitude 
+    };
 }
 
 function haversine(point1, point2) {

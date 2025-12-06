@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wishlistList = document.getElementById('wishlist-list');
     const starredList = document.getElementById('starred-list');
 
-    const FALLBACK_PET_TYPES = [
+    const PET_TYPES = [
         'Dog',
         'Cat',
         'Rabbit',
@@ -23,10 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyTypesToDropdown(dropdown, types) {
         if (!dropdown) return;
+    
         dropdown.innerHTML = '<option value="">All Types</option>';
+    
         types.forEach((entry) => {
             const label = typeof entry === 'string' ? entry : entry?.name;
             if (!label) return;
+            
             const option = document.createElement('option');
             option.value = label;
             option.textContent = label;
@@ -34,18 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function populatePetTypes() {
+    function populatePetTypes() {
         if (!typeDropdown) return;
-        applyTypesToDropdown(typeDropdown, FALLBACK_PET_TYPES);
-        try {
-            const response = await axios.get('/api/types');
-            const types = Array.isArray(response.data.types) ? response.data.types : [];
-            if (types.length > 0) {
-                applyTypesToDropdown(typeDropdown, types);
-            }
-        } catch (error) {
-            console.error('Error fetching pet types:', error);
-        }
+        applyTypesToDropdown(typeDropdown, PET_TYPES);
     }
 
     async function fetchPets(params) {

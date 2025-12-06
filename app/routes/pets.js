@@ -62,7 +62,7 @@ function normalizePet(dbPet) {
             email: dbPet.contact_email,
             phone: dbPet.contact_phone,
             address: {
-                address1: dbPet.contact_address1,
+                address1: null,
                 city: dbPet.city,
                 state: dbPet.state_code,
                 postcode: dbPet.zipcode
@@ -76,84 +76,67 @@ function normalizePet(dbPet) {
 
 
 router.get('/pets', async (req, res) => {
-  const accessToken = petAuth.getAccessToken();
-  if (!accessToken) {
-    return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
-  }
+    const { type, distance, location } = req.query;
+    
+    const zip = location ? location : '19104';
+    const searchDistance = parseFloat(distance);
 
-  const { type, distance, location } = req.query;
-  const externalApiUrl = 'https://api.petfinder.com/v2/animals';
-  const zip = location || '10001';
-  const searchDistance = parseFloat(distance);
+    const shouldFilterByType = !!type;
+    const shouldFilterByDistance = !isNaN(searchDistance) && searchDistance > 0;
+    
+    let userCoords = null;
+    let pets = [];
 
-  const shouldFilterByDistance = !isNaN(searchDistance) && searchDistance > 0;
-
-  let userCoords = null;
-  try {
-    userCoords = await getCoordsFromZip(zip);
-  } catch (error) {
-    console.warn(`Geocoding failed for zip ${zip}:`, error.message);
-  }
-
-  const externalApiCall = axios.get(externalApiUrl, {
-        params: {
-            type,
-            location: zip,
-            distance: distance || 50,
-            limit: 20
-        },
-        headers: {
-            Authorization: `Bearer ${accessToken}`
+    if (shouldFilterByDistance) {
+        try {
+            userCoords = getCoordsFromZip(zip); 
+        } catch (error) {
+            console.warn(`Geocoding failed for zip ${zip}:`, error.message);
         }
-    });
-
-  const dbQuery = await pool.query(
-      `SELECT * FROM user_pet_listings 
-        WHERE type = $1 AND status = 'adoptable'`,
-      [type]
-  );
-
-  try {
-    const [petfinderResponse, dbResponse] = await Promise.all([externalApiCall, dbQuery]);
-
-    const externalPets = petfinderResponse.data.animals;
-    const customPets = dbResponse.rows; 
-
-    const filteredCustomPets = customPets.filter(pet => {
-      if (!shouldFilterByDistance || userCoords === null) {
-            return true;
-      }
-
-      if (!pet.latitude || !pet.longitude) {
-        return false; 
-      }
-      
-      const petCoords = { lat: pet.latitude, lon: pet.longitude };
-      
-      const calculatedDistance = calculateDistanceInMiles(userCoords, petCoords);
-      return calculatedDistance <= searchDistance;
-    });
-
-    const normalizedCustomPets = filteredCustomPets.map(pet => normalizePet(pet));
-  
-    const allPets = [...normalizedCustomPets, ...externalPets];
-
-    res.json({ pets: allPets }); 
-  } catch (error) {
-    console.error('Error fetching pets:', error.message);
-    if (error.response) {
-      console.error('Petfinder Status:', error.response.status);
-      console.error('Petfinder Data:', error.response.data);
-      if (error.response.status === 401) {
-        return res.status(503).json({
-          error: "External API token error. Retrying authentication.",
-          detail: error.response.data
-        });
-      }
-      return res.status(error.response.status).json(error.response.data);
     }
-    res.status(500).json({ error: "Internal Server Error during Petfinder request." });
-  }
+
+    let queryText = `SELECT * FROM user_pet_listings WHERE status = 'adoptable'`;
+    const queryParams = [];
+    let paramIndex = 1;
+
+    if (shouldFilterByType) {
+        queryText += ` AND LOWER(type) = LOWER($${paramIndex++})`;
+        queryParams.push(type);
+    }
+
+    try {
+        const dbResponse = await pool.query(queryText, queryParams);
+        pets = dbResponse.rows;
+
+        if (shouldFilterByDistance && userCoords !== null) {
+            const userLat = userCoords.lat;
+            const userLon = userCoords.lon;
+
+            const filteredPets = pets.filter(pet => {
+                if (!pet.latitude || !pet.longitude) {
+                    return false; 
+                }
+                
+                const petCoords = { lat: pet.latitude, lon: pet.longitude };
+                const calculatedDistance = calculateDistanceInMiles(
+                    { lat: userLat, lon: userLon }, 
+                    petCoords
+                );
+
+                return calculatedDistance <= searchDistance;
+            });
+
+            pets = filteredPets;
+        }
+
+        const normalizedPets = pets.map(pet => normalizePet(pet));
+
+        res.json({ pets: normalizedPets }); 
+
+    } catch (error) {
+        console.error('Error fetching pets from database:', error.message);
+        res.status(500).json({ error: "Internal Server Error while fetching local pet listings." });
+    }
 });
 
 router.post('/user/pets', async (req, res) => {
@@ -167,7 +150,7 @@ router.post('/user/pets', async (req, res) => {
   let longitude = null;
   
   try {
-    const coords = await getCoordsFromZip(petData.zipcode);
+    const coords = getCoordsFromZip(petData.zipcode);
     latitude = coords.lat;
     longitude = coords.lon;
   } catch (error) {
@@ -240,126 +223,34 @@ router.get('/pets/:id', async (req, res) => {
     const petId = req.params.id;
 
     if (petId.startsWith('CUSTOM-')) {
+        const customDbId = petId.replace('CUSTOM-', '');
+        
+        try {
+            const dbResponse = await pool.query(
+                `SELECT * FROM user_pet_listings WHERE id = $1`,
+                [customDbId]
+            );
 
-      const customDbId = petId.replace('CUSTOM-', '');
-      try {
-        const dbResponse = await pool.query(
-          `SELECT * FROM user_pet_listings WHERE id = $1`,
-          [customDbId]
-        );
+            const customPet = dbResponse.rows[0];
 
-        const customPet = dbResponse.rows[0];
+            if (customPet) {
+                const normalizedPet = normalizePet(customPet); 
+                return res.json({ animal: normalizedPet }); 
+            } else {
+                return res.status(404).json({ error: "Custom pet not found." });
+            }
 
-        if (customPet) {
-          const normalizedPet = normalizePet(customPet); 
-          return res.json({ animal: normalizedPet }); 
-        } else {
-          return res.status(404).json({ error: "Custom pet not found." });
+        } catch (error) {
+            console.error('Error fetching custom pet from DB:', error.message);
+            return res.status(500).json({ error: "Internal Server Error accessing custom pet data." });
         }
-
-      } catch (error) {
-        console.error('Error fetching custom pet from DB:', error.message);
-        return res.status(500).json({ error: "Internal Server Error accessing custom pet data." });
-      }
     }
 
-    const accessToken = petAuth.getAccessToken();
-    if (!accessToken) {
-      return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
-    }
-
-    const externalApiUrl = `https://api.petfinder.com/v2/animals/${petId}`;
-    
-    try {
-      const response = await axios.get(externalApiUrl, {
-          headers: {
-              Authorization: `Bearer ${accessToken}`
-          }
-      });
-      console.log('Fetched pet data:', response.data);
-      res.json(response.data);
-    } catch (error) {
-      console.error('Error fetching pet from Petfinder:', error.message);
-      if (error.response) {
-        console.error('Petfinder Status:', error.response.status);
-        console.error('Petfinder Data:', error.response.data);
-          
-        if (error.response.status === 404) {
-              return res.status(404).json({ error: "External pet not found." });
-        }
-        if (error.response.status === 401) {
-          return res.status(503).json({
-            error: "External API token error. Retrying authentication.",
-            detail: error.response.data
-          });
-        } 
-      }
-      res.status(500).json({ error: "Internal Server Error during Petfinder request." });
-    }
-});
-
-router.get('/types', async (req, res) => {
-  const accessToken = petAuth.getAccessToken();
-  if (!accessToken) {
-    return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
-  }
-
-  const externalApiUrl = 'https://api.petfinder.com/v2/types';
-  try {
-    const response = await axios.get(externalApiUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+    return res.status(404).json({ 
+        error: "Pet not found in local database." 
     });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error fetching pet types from Petfinder:', error.message);
-    if (error.response) {
-      console.error('Petfinder Status:', error.response.status);
-      console.error('Petfinder Data:', error.response.data);
-      if (error.response.status === 401) {
-        return res.status(503).json({
-          error: "External API token error. Retrying authentication.",
-          detail: error.response.data
-        });
-      }
-      return res.status(error.response.status).json(error.response.data);
-    }
-    res.status(500).json({ error: "Internal Server Error during Petfinder request." });
-  }
 });
 
-router.get('/types/:type', async (req, res) => {
-  const accessToken = petAuth.getAccessToken();
-  if (!accessToken) {
-    return res.status(503).json({ error: "Service unavailable, waiting for Petfinder token." });
-  }
-
-  const type = req.params.type;
-  const externalApiUrl = `https://api.petfinder.com/v2/types/${type}`;
-  try {
-    const response = await axios.get(externalApiUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error fetching pet type from Petfinder:', error.message);
-    if (error.response) {
-      console.error('Petfinder Status:', error.response.status);
-      console.error('Petfinder Data:', error.response.data);
-      if (error.response.status === 401) {
-        return res.status(503).json({
-          error: "External API token error. Retrying authentication.",
-          detail: error.response.data
-        });
-      }
-      return res.status(error.response.status).json(error.response.data);
-    }
-    res.status(500).json({ error: "Internal Server Error during Petfinder request." });
-  }
-});
 
 router.get('/price/pets/:id', (req, res) => {
   // fetch price from cache using petid. If not found, generate random price between $500 and $5000

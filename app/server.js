@@ -20,8 +20,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-petAuth.startTokenManager(config);
-
 app.use('/api', petsRouter);
 app.use('/api', authRouter);
 app.use('/api', savedRouter);
