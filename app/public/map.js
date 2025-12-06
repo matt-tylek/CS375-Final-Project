@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_VIEW = { lat: 39.9526, lng: -75.1652, zoom: 12 };
+    const mapEl = document.getElementById('map');
     const shelterListEl = document.getElementById('shelterList');
 
     const shelters = [
@@ -40,26 +41,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    if (!document.getElementById('map')) {
-        console.warn('Map container missing. Shelters cannot be displayed.');
-        return;
+    const mapStatus = mapEl ? document.createElement('div') : null;
+    if (mapStatus) {
+        mapStatus.className = 'map-status hidden';
+        mapStatus.setAttribute('role', 'status');
+        mapStatus.setAttribute('aria-live', 'polite');
+        mapEl.appendChild(mapStatus);
     }
 
-    if (typeof L === 'undefined') {
-        console.warn('Leaflet is not available. Unable to render map.');
-        return;
+    function setStatus(message, isError = false) {
+        if (!mapStatus) return;
+        mapStatus.textContent = message;
+        mapStatus.classList.toggle('error', isError);
+        mapStatus.classList.toggle('hidden', !message);
     }
 
-    const map = L.map('map', {
-        scrollWheelZoom: true
-    }).setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
+    function clearStatus() {
+        if (!mapStatus) return;
+        mapStatus.textContent = '';
+        mapStatus.classList.add('hidden');
+        mapStatus.classList.remove('error');
+    }
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
+    let map = null;
     const markers = new Map();
-    let activeMarkerKey = null;
 
     function buildPopup(shelter) {
         const link = shelter.website ? `<a href="${shelter.website}" target="_blank" rel="noopener">Visit site</a>` : '';
@@ -70,6 +75,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${link}
             </div>
         `;
+    }
+
+    function updateActiveCard(idx) {
+        if (!shelterListEl) return;
+        Array.from(shelterListEl.children).forEach((card, cardIdx) => {
+            card.classList.toggle('active', cardIdx === idx);
+        });
+    }
+
+    function focusShelter(idx) {
+        const shelter = shelters[idx];
+        if (!shelter) return;
+        updateActiveCard(idx);
+        if (!map) return;
+        const marker = markers.get(shelter.name);
+        if (marker) {
+            marker.openPopup();
+            map.setView(marker.getLatLng(), 13, { animate: true });
+        }
     }
 
     function renderShelterList() {
@@ -97,25 +121,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateActiveCard(idx) {
-        if (!shelterListEl) return;
-        Array.from(shelterListEl.children).forEach((card, cardIdx) => {
-            card.classList.toggle('active', cardIdx === idx);
-        });
+    renderShelterList();
+
+    if (!mapEl) {
+        setStatus('Map container missing. Shelters cannot be displayed on the map.', true);
+        console.warn('Map container missing. Shelters cannot be displayed.');
+        return;
     }
 
-    function focusShelter(idx) {
-        const shelter = shelters[idx];
-        if (!shelter) return;
-        const markerKey = shelter.name;
-        const marker = markers.get(markerKey);
-        if (marker) {
-            marker.openPopup();
-            map.setView(marker.getLatLng(), 13, { animate: true });
-            activeMarkerKey = markerKey;
-            updateActiveCard(idx);
-        }
+    if (typeof L === 'undefined') {
+        setStatus('Map failed to load. Please refresh once you are back online.', true);
+        console.warn('Leaflet is not available. Unable to render map.');
+        return;
     }
+
+    setStatus('Loading map...');
+
+    try {
+        map = L.map(mapEl, { scrollWheelZoom: true })
+            .setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
+    } catch (error) {
+        setStatus('Map could not start. Please refresh and try again.', true);
+        console.error('Unable to initialize map:', error);
+        return;
+    }
+
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    tileLayer.on('load', clearStatus);
+    tileLayer.on('tileerror', () => {
+        setStatus('Map tiles could not load. Check your connection and refresh.', true);
+    });
 
     shelters.forEach((shelter) => {
         const marker = L.marker(shelter.coords).addTo(map);
@@ -123,11 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
         markers.set(shelter.name, marker);
         marker.on('click', () => {
             const idx = shelters.indexOf(shelter);
-            activeMarkerKey = shelter.name;
             updateActiveCard(idx);
         });
     });
 
-    renderShelterList();
     focusShelter(0);
 });
