@@ -4,75 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pet Details</title>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="vendor/axios.min.js"></script>
     <link rel="stylesheet" href="style.css"> 
-    <style>
-        nav {
-            width: 100%; 
-            margin: 0; 
-            border-bottom: 1px solid #ddd;
-            position: fixed;
-            top: 0;
-            z-index: 100;
-            padding: 10px 20px;
-            box-sizing: border-box;
-        }
-        h3 { color: black }
-        body { font-family: Arial, sans-serif; background-color: #f6f8fa; margin: 0; padding: 0; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding-top: 80px;}
-        .detail-flex { display: flex; gap: 30px; flex-wrap: wrap; margin-bottom: 30px; }
-        .main-image { flex: 1 1 400px; max-width: 100%; }
-        .main-image img { width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .info-panel { flex: 1 1 300px; }
-        .attribute-status { display: flex; align-items: center; margin-bottom: 5px; }
-        .tag-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .tag-list li { background-color: #e7f0ff; padding: 5px 10px; border-radius: 5px; font-size: 0.9em; }
-        .section-header { border-bottom: 2px solid #565a5f; padding-bottom: 5px; margin-top: 20px; }
-        .chat-to-shelter-btn {
-            display: block; 
-            width: 100%;
-            margin-top: 20px;
-            padding: 12px 20px;
-            background-color: #28a745; 
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .chat-to-shelter-btn:hover {
-            background-color: #1e7e34;
-        }
-        .chat-link {
-            text-decoration: none; 
-            display: block;
-        }
-        .pet-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .pet-actions button {
-            flex: 1 1 180px;
-        }
-        .social-share {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .social-share button {
-            flex: 1 1 180px;
-        }
-        .social-share h3 {
-            width: 100%;             
-            text-align: left;      
-        }
-    </style>
 </head>
 <body>
     <nav>
