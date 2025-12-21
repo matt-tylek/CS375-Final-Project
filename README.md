@@ -1,10 +1,22 @@
-# CS375-Final-Project: Petfinder
+# PetConnect: Pet Adoption Marketplace
 
-## PetFinder:
+**PetConnect** is a web application that connects pet owners with adopters, providing a seamless platform to browse, post, and adopt pets. Users can chat in real time with pet owners through a built-in direct messaging feature powered by WebSockets and complete adoptions securely using Stripe Checkout.
 
-A web application built using Node.js and Express to serve static HTML, with Axios handling client-side API requests and PostgreSQL managing pet data.
+## Features
 
-API Doc: https://www.petfinder.com/developers/v2/docs/
+- **Marketplace for Pets:** Users can browse pets available for adoption, post pets for adoption, and search with filters.  
+- **Real-Time Chat:** Direct messaging between adopters and pet owners to facilitate communication.  
+- **Secure Adoptions:** Stripe integration for safe and smooth adoption payments.  
+- **Responsive UI:** User-friendly interface for both desktop and mobile users.  
+
+## Technologies
+
+- Node.js, Express, Axios  
+- PostgreSQL for data storage  
+- WebSockets for real-time messaging  
+- Stripe Checkout for secure payments  
+- HTML, CSS, JavaScript for frontend
+
 
 ## How to Run:
 
