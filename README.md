@@ -16,6 +16,8 @@
 - WebSockets for real-time messaging  
 - Stripe Checkout for secure payments  
 - HTML, CSS, JavaScript for frontend
+- AWS Elastic Beanstalk for deployment  
+- AWS IAM for secure access and permissions
 
 
 ## How to Run:
